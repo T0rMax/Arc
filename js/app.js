@@ -1,7 +1,3 @@
-/* ============================================
-   ARC 2.0 — Application Logic
-   ============================================ */
-
 ;(function () {
   'use strict'
 
@@ -15,7 +11,9 @@
     rounding: 2,
     animations: true,
     accentColor: 'blue',
-    history: [],
+    scaleHistory: [],
+    formulaHistory: [],
+    sciHistory: [],
     formulas: [],
     categories: ['arquitectura', 'fisica', 'matematica', 'personalizadas'],
     currentFormulaCategory: 'arquitectura',
@@ -37,20 +35,32 @@
       if (s) Object.assign(state, JSON.parse(s))
       const f = localStorage.getItem('arc_formulas')
       if (f) state.formulas = JSON.parse(f)
-      const h = localStorage.getItem('arc_history')
-      if (h) state.history = JSON.parse(h)
+      const sh = localStorage.getItem('arc_scale_history')
+      if (sh) state.scaleHistory = JSON.parse(sh)
+      const fh = localStorage.getItem('arc_formula_history')
+      if (fh) state.formulaHistory = JSON.parse(fh)
+      const sch = localStorage.getItem('arc_sci_history')
+      if (sch) state.sciHistory = JSON.parse(sch)
       const p = localStorage.getItem('arc_pinned')
       if (p) state.pinnedFormulas = JSON.parse(p)
     } catch (e) {}
+    // Ensure arrays exist
+    if (!state.scaleHistory) state.scaleHistory = []
+    if (!state.formulaHistory) state.formulaHistory = []
+    if (!state.sciHistory) state.sciHistory = []
+    if (!state.pinnedFormulas) state.pinnedFormulas = []
   }
 
   function persistState () {
     try {
       const s = { ...state }
-      delete s.formulas; delete s.history; delete s.pinnedFormulas
+      delete s.formulas; delete s.scaleHistory; delete s.formulaHistory
+      delete s.sciHistory; delete s.pinnedFormulas
       localStorage.setItem('arc_state', JSON.stringify(s))
       localStorage.setItem('arc_formulas', JSON.stringify(state.formulas))
-      localStorage.setItem('arc_history', JSON.stringify(state.history))
+      localStorage.setItem('arc_scale_history', JSON.stringify(state.scaleHistory))
+      localStorage.setItem('arc_formula_history', JSON.stringify(state.formulaHistory))
+      localStorage.setItem('arc_sci_history', JSON.stringify(state.sciHistory))
       localStorage.setItem('arc_pinned', JSON.stringify(state.pinnedFormulas))
     } catch (e) {}
   }
@@ -108,6 +118,7 @@
     const content = document.querySelector('.content')
     if (content) content.scrollTop = 0
     if (section === 'dashboard') updateDashboard()
+    if (section === 'historial') renderHistory()
     persistState()
   }
 
@@ -123,23 +134,26 @@
     const el = document.getElementById('dashGreeting')
     if (el) el.textContent = greeting
 
-    const today = now.toLocaleDateString('es-ES')
-    const todayCount = state.history.filter(h => h.date === today).length
+    const dateStr = now.toLocaleDateString('es-ES')
+    const allHistory = [...state.scaleHistory, ...state.formulaHistory, ...state.sciHistory]
+    const todayCount = allHistory.filter(h => h.date === dateStr).length
     document.getElementById('dashCalcCount').textContent = todayCount
     document.getElementById('dashFormulaCount').textContent = state.formulas.length
+    document.getElementById('dashFavCount').textContent = state.pinnedFormulas.length
 
-    // Recent calcs
+    // Recent calcs (from all histories)
     const recentList = document.getElementById('dashRecentList')
-    const recent = state.history.slice(0, 5)
+    const recent = allHistory.sort((a, b) => b.id - a.id).slice(0, 5)
     if (recent.length === 0) {
-      recentList.innerHTML = '<div class="dash-recent-empty"><p>Aún no hay cálculos</p></div>'
+      recentList.innerHTML = '<div class="dash-empty"><p>Aún no hay cálculos</p></div>'
     } else {
-      recentList.innerHTML = recent.map(h => `
-        <div class="dash-recent-item">
+      recentList.innerHTML = recent.map(h => {
+        const typeLabel = { escalas: '📐', formulas: '📊', cientifica: '🔬' }[h.type] || ''
+        return `<div class="dash-recent-item">
           <span class="dash-recent-item-result">${h.result}</span>
-          <div class="dash-recent-item-info">${h.date} ${h.time}<br>${h.formula}</div>
-        </div>
-      `).join('')
+          <div class="dash-recent-item-info">${typeLabel} ${h.date} ${h.time}<br>${h.formula}</div>
+        </div>`
+      }).join('')
     }
 
     // Pinned formulas
@@ -148,7 +162,7 @@
       ? state.formulas.filter(f => state.pinnedFormulas.includes(f.id))
       : state.formulas.slice(0, 4)
     if (pinned.length === 0) {
-      pinnedList.innerHTML = '<div class="dash-pinned-empty"><p>Sin fórmulas favoritas</p></div>'
+      pinnedList.innerHTML = '<div class="dash-empty"><p>Sin fórmulas favoritas</p></div>'
     } else {
       pinnedList.innerHTML = pinned.map(f => `
         <div class="dash-pinned-item" data-id="${f.id}">
@@ -160,9 +174,9 @@
   }
 
   // ============================
-  // SMART CALCULATOR
+  // SCALE CALCULATOR
   // ============================
-  function calculate () {
+  function calculateScale () {
     const x = parseFloat(document.getElementById('calcInput').value)
     const mult = parseFloat(document.getElementById('multiplierInput').value) || state.calcMultiplier
     const div = parseFloat(document.getElementById('divisorInput').value) || state.calcDivisor
@@ -173,7 +187,7 @@
     if (isNaN(x) || isNaN(mult) || isNaN(div) || div === 0) {
       document.getElementById('resultValue').textContent = '—'
       document.getElementById('calcDisplay').textContent = '0'
-      return
+      return null
     }
 
     const result = (x * mult) / div
@@ -190,50 +204,202 @@
       display.style.transition = 'transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)'
       display.style.transform = 'scale(1)'
     })
+
+    return { x, mult, div, result: formatted, raw: rounded }
   }
 
-  function addHistory (x, mult, div, result) {
+  function addScaleHistory (x, mult, div, result) {
     const now = new Date()
     const timeStr = now.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })
     const dateStr = now.toLocaleDateString('es-ES')
-    state.history.unshift({
+    state.scaleHistory.unshift({
       id: Date.now(),
+      type: 'escalas',
       x, mult, div, result,
       time: timeStr, date: dateStr,
       formula: `(${x} × ${mult}) ÷ ${div} = ${result}`
     })
-    if (state.history.length > 200) state.history.length = 200
+    if (state.scaleHistory.length > 200) state.scaleHistory.length = 200
     persistState()
-    renderHistory()
+  }
+
+  function applyScalePreset (scale) {
+    document.getElementById('multiplierInput').value = '1'
+    document.getElementById('divisorInput').value = String(scale)
+    document.querySelectorAll('.preset-chip.scale-preset').forEach(b => {
+      b.classList.toggle('active', parseFloat(b.dataset.scale) === scale)
+    })
+    document.querySelectorAll('.preset-chip[data-value]').forEach(b => b.classList.remove('active'))
+    triggerScaleCalc()
+    showToast(`Escala 1:${scale} aplicada`)
+  }
+
+  let scaleCalcTimeout
+  function triggerScaleCalc () {
+    clearTimeout(scaleCalcTimeout)
+    scaleCalcTimeout = setTimeout(() => {
+      const res = calculateScale()
+      if (res) {
+        addScaleHistory(res.x, res.mult, res.div, res.result)
+      }
+    }, 350)
   }
 
   // ============================
-  // HISTORY
+  // FORMULA CALCULATOR ENGINE
   // ============================
-  function renderHistory () {
-    const list = document.getElementById('historyList')
-    const empty = document.getElementById('historyEmpty')
-    if (!list) return
-    if (state.history.length === 0) {
-      list.innerHTML = ''
-      empty.style.display = 'flex'
+  let formulaCalcExpr = ''
+  let formulaCalcVars = {}
+  let formulaCalcCurrentId = null
+
+  function detectVariables (expr) {
+    if (!expr) return []
+    const mathFuncs = ['sin', 'cos', 'tan', 'log', 'ln', 'sqrt', 'abs', 'floor', 'ceil', 'round', 'exp']
+    // Find single-letter tokens that aren't Math functions or numbers
+    const tokens = expr.match(/[a-zA-Z]+/g) || []
+    const vars = new Set()
+    for (const t of tokens) {
+      if (t.length === 1 && !mathFuncs.includes(t) && t !== 'e' && t !== 'g') {
+        vars.add(t)
+      }
+    }
+    return Array.from(vars).sort()
+  }
+
+  function evalFormulaExpr (expr, varValues) {
+    let sanitized = expr
+      .replace(/×/g, '*').replace(/÷/g, '/').replace(/−/g, '-')
+      .replace(/\^/g, '**')
+      .replace(/sin\(/g, 'Math.sin(')
+      .replace(/cos\(/g, 'Math.cos(')
+      .replace(/tan\(/g, 'Math.tan(')
+      .replace(/log\(/g, 'Math.log10(')
+      .replace(/ln\(/g, 'Math.log(')
+      .replace(/sqrt\(/g, 'Math.sqrt(')
+      .replace(/√\(/g, 'Math.sqrt(')
+      .replace(/π/g, 'Math.PI')
+      .replace(/pi/gi, 'Math.PI')
+
+    // Replace variable names with their values
+    for (const [v, val] of Object.entries(varValues)) {
+      if (val !== undefined && val !== '') {
+        const re = new RegExp('\\b' + v + '\\b', 'g')
+        sanitized = sanitized.replace(re, String(val))
+      }
+    }
+
+    if (!/^[\d\s+\-*/().%]+$/.test(sanitized)) return null
+    let open = (sanitized.match(/\(/g) || []).length
+    let close = (sanitized.match(/\)/g) || []).length
+    while (close < open) { sanitized += ')'; close++ }
+    try { return Function('"use strict"; return (' + sanitized + ')')() }
+    catch (e) { return null }
+  }
+
+  function formulaCalcUpdate () {
+    const exprInput = document.getElementById('formulaCalcExpr')
+    const varsContainer = document.getElementById('formulaCalcVars')
+    const resultEl = document.getElementById('formulaCalcResult')
+    const nameEl = document.getElementById('formulaCalcName')
+
+    if (!exprInput) return
+    const expr = exprInput.value.trim()
+    formulaCalcExpr = expr
+
+    if (!expr) {
+      varsContainer.innerHTML = ''
+      resultEl.textContent = '—'
+      nameEl.textContent = 'Ingresa o selecciona una fórmula'
       return
     }
-    empty.style.display = 'none'
-    list.innerHTML = state.history.map(item => `
-      <div class="history-item">
-        <div class="history-item-info">
-          <div class="history-item-detail">
-            <span class="history-item-result">${item.result}</span>
-            <span class="history-item-time">${item.date} ${item.time}</span>
-          </div>
-          <div class="history-item-formula">${item.formula}</div>
-        </div>
-        <button class="history-item-copy" data-id="${item.id}" title="Copiar">
-          <svg viewBox="0 0 24 24" width="16" height="16"><path d="M16 1H4a2 2 0 00-2 2v14h2V3h12V1zm3 4H8a2 2 0 00-2 2v14a2 2 0 002 2h11a2 2 0 002-2V7a2 2 0 00-2-2zm0 16H8V7h11v14z" fill="currentColor"/></svg>
-        </button>
-      </div>
-    `).join('')
+
+    const vars = detectVariables(expr)
+    const existingInputs = {}
+    varsContainer.querySelectorAll('.formula-calc-var-input').forEach(inp => {
+      existingInputs[inp.dataset.var] = inp.value
+    })
+
+    if (vars.length > 0) {
+      varsContainer.innerHTML = vars.map(v => {
+        const val = existingInputs[v] !== undefined ? existingInputs[v] : '0'
+        formulaCalcVars[v] = val
+        return `<div class="formula-calc-var-chip">
+          <span class="formula-calc-var-label">${v}</span>
+          <input type="number" class="formula-calc-var-input" data-var="${v}" value="${val}" placeholder="0" step="any">
+        </div>`
+      }).join('')
+    } else {
+      varsContainer.innerHTML = ''
+    }
+
+    // Collect current values and evaluate
+    const values = {}
+    varsContainer.querySelectorAll('.formula-calc-var-input').forEach(inp => {
+      const v = inp.dataset.var
+      const val = parseFloat(inp.value)
+      values[v] = isNaN(val) ? 0 : val
+      formulaCalcVars[v] = inp.value
+    })
+
+    const result = evalFormulaExpr(expr, values)
+    if (result !== null && isFinite(result)) {
+      const formatted = formatNumber(roundValue(result, 6), 6)
+      resultEl.textContent = formatted
+      animateFormulaResult(resultEl)
+    } else {
+      resultEl.textContent = 'Error'
+    }
+  }
+
+  function animateFormulaResult (el) {
+    el.style.transition = 'none'
+    el.style.transform = 'scale(1.05)'
+    requestAnimationFrame(() => {
+      el.style.transition = 'transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)'
+      el.style.transform = 'scale(1)'
+    })
+  }
+
+  function addFormulaHistory (expr, varValues, result) {
+    const now = new Date()
+    const timeStr = now.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })
+    const dateStr = now.toLocaleDateString('es-ES')
+    const valsStr = Object.entries(varValues).filter(([_, v]) => v !== '' && v !== '0')
+      .map(([k, v]) => `${k}=${v}`).join(', ')
+    state.formulaHistory.unshift({
+      id: Date.now(),
+      type: 'formulas',
+      expr, varValues, result,
+      time: timeStr, date: dateStr,
+      formula: `y = ${expr}  →  ${valsStr ? valsStr + '  →  ' : ''}${result}`
+    })
+    if (state.formulaHistory.length > 200) state.formulaHistory.length = 200
+    persistState()
+  }
+
+  function formulaCalcClear () {
+    document.getElementById('formulaCalcExpr').value = ''
+    document.getElementById('formulaCalcVars').innerHTML = ''
+    document.getElementById('formulaCalcResult').textContent = '—'
+    document.getElementById('formulaCalcName').textContent = 'Ingresa o selecciona una fórmula'
+    formulaCalcExpr = ''
+    formulaCalcVars = {}
+    formulaCalcCurrentId = null
+  }
+
+  function loadFormulaToCalc (formula) {
+    if (!formula) return
+    const exprInput = document.getElementById('formulaCalcExpr')
+    exprInput.value = formula.expr
+    formulaCalcCurrentId = formula.id
+    document.getElementById('formulaCalcName').textContent = formula.name
+    formulaCalcUpdate()
+    navigateTo('formulas')
+    // Focus first var input after render
+    setTimeout(() => {
+      const firstInput = document.querySelector('.formula-calc-var-input')
+      if (firstInput) firstInput.focus()
+    }, 100)
   }
 
   // ============================
@@ -254,9 +420,9 @@
     ],
     matematica: [
       { name: 'Porcentaje', expr: '(x * x) / 100', desc: 'Porcentaje de un número' },
-      { name: 'Raíz cuadrada', expr: 'Math.sqrt(x)', desc: '√x' },
-      { name: 'Potencia', expr: 'Math.pow(x, x)', desc: 'xⁿ' },
-      { name: 'Seno', expr: 'Math.sin(x)', desc: 'sin(x)' }
+      { name: 'Raíz cuadrada', expr: 'sqrt(x)', desc: '√x' },
+      { name: 'Potencia', expr: 'x^x', desc: 'xⁿ' },
+      { name: 'Seno', expr: 'sin(x)', desc: 'sin(x)' }
     ],
     personalizadas: []
   }
@@ -293,12 +459,12 @@
       const pinned = state.pinnedFormulas.includes(f.id)
       return `<div class="formula-item">
         <div class="formula-item-header">
-          <span class="formula-item-name">${pinned ? '📌 ' : ''}${f.name}</span>
+          <span class="formula-item-name">${f.name}</span>
           <div class="formula-item-actions">
             <button class="formula-item-action pin" data-id="${f.id}" title="${pinned ? 'Desfijar' : 'Fijar'}">
               <svg viewBox="0 0 24 24" width="14" height="14"><path d="M16 11c0 1.66-1.34 3-3 3h-2v5h-2v-5H7v-3h2V6c0-1.66 1.34-3 3-3s3 1.34 3 3v5h2v3h-1z" fill="${pinned ? '#42a5f5' : 'currentColor'}"/></svg>
             </button>
-            <button class="formula-item-action use" data-id="${f.id}" title="Usar">
+            <button class="formula-item-action use" data-id="${f.id}" title="Usar en calculadora">
               <svg viewBox="0 0 24 24" width="14" height="14"><path d="M8 5v14l11-7z" fill="currentColor"/></svg>
             </button>
             <button class="formula-item-action delete-f" data-id="${f.id}" title="Eliminar">
@@ -310,51 +476,6 @@
         ${f.desc ? `<div class="formula-item-desc">${f.desc}</div>` : ''}
       </div>`
     }).join('')
-  }
-
-  function useFormula (id) {
-    const f = state.formulas.find(f => f.id === id)
-    if (!f) return
-    const expr = f.expr
-    const xVal = document.getElementById('calcInput').value || '1'
-
-    // Try basic calculator patterns first
-    const basicPatterns = [
-      { re: /\(\s*x\s*\*\s*([\d.]+)\s*\)\s*\/\s*([\d.]+)/, mult: 1, div: 2 },
-      { re: /x\s*\*\s*([\d.]+)\s*\/\s*([\d.]+)/, mult: 1, div: 2 },
-      { re: /x\s*\*\s*([\d.]+)/, mult: 1, div: null },
-      { re: /([\d.]+)\s*\*\s*x/, mult: 1, div: null },
-      { re: /x\s*\/\s*([\d.]+)/, mult: null, div: 1 }
-    ]
-
-    for (const p of basicPatterns) {
-      const m = expr.match(p.re)
-      if (m) {
-        document.getElementById('multiplierInput').value = p.mult ? m[p.mult] : '1'
-        document.getElementById('divisorInput').value = p.div ? m[p.div] : '1'
-        triggerCalc()
-        navigateTo('calculadora')
-        showToast(`"${f.name}" cargada`)
-        return
-      }
-    }
-
-    // Send to scientific calculator
-    const sciExprRaw = expr.replace(/x/g, xVal)
-    sciExpr = sciExprRaw
-    const expEl = document.getElementById('sciExpression')
-    const resEl = document.getElementById('sciResult')
-    if (expEl) expEl.textContent = rawToDisplay(sciExprRaw)
-    // Auto-evaluate
-    const result = evalScientific(sciExprRaw)
-    if (result !== null && isFinite(result)) {
-      sciResult = formatNumber(roundValue(result, 8), 8)
-      if (resEl) resEl.textContent = sciResult
-    } else {
-      if (resEl) resEl.textContent = 'Error'
-    }
-    navigateTo('cientifica')
-    showToast(`"${f.name}" cargada en científica`)
   }
 
   function deleteFormula (id) {
@@ -416,6 +537,7 @@
         if (result !== null && isFinite(result)) {
           sciResult = formatNumber(roundValue(result, 8), 8)
           resEl.textContent = sciResult
+          addSciHistory(sciExpr, sciResult)
           animateResult(resEl)
         } else {
           resEl.textContent = 'Error'
@@ -459,6 +581,21 @@
     while (close < open) { sanitized += ')'; close++ }
     try { return Function('"use strict"; return (' + sanitized + ')')() }
     catch (e) { return null }
+  }
+
+  function addSciHistory (expr, result) {
+    const now = new Date()
+    const timeStr = now.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })
+    const dateStr = now.toLocaleDateString('es-ES')
+    state.sciHistory.unshift({
+      id: Date.now(),
+      type: 'cientifica',
+      expr, result,
+      time: timeStr, date: dateStr,
+      formula: `${rawToDisplay(expr)} = ${result}`
+    })
+    if (state.sciHistory.length > 200) state.sciHistory.length = 200
+    persistState()
   }
 
   // ============================
@@ -506,14 +643,12 @@
     const xToPixel = x => pad + ((x - xMin) / (xMax - xMin)) * plotW
     const yToPixel = y => pad + ((yMax - y) / (yMax - yMin)) * plotH
 
-    // Clear
     const gradient = ctx.createRadialGradient(w/2, h/2, 0, w/2, h/2, w/2)
     gradient.addColorStop(0, '#0d0d0d')
     gradient.addColorStop(1, '#070707')
     ctx.fillStyle = gradient
     ctx.fillRect(0, 0, w, h)
 
-    // Grid
     ctx.strokeStyle = 'rgba(255,255,255,0.04)'
     ctx.lineWidth = 1
     const xStep = Math.pow(10, Math.floor(Math.log10((xMax - xMin) / 5)))
@@ -527,14 +662,12 @@
       ctx.beginPath(); ctx.moveTo(pad, py); ctx.lineTo(w - pad, py); ctx.stroke()
     }
 
-    // Axes
     ctx.strokeStyle = 'rgba(255,255,255,0.12)'
     ctx.lineWidth = 1.5
     const x0 = xToPixel(0); const y0 = yToPixel(0)
     if (x0 >= pad && x0 <= w - pad) { ctx.beginPath(); ctx.moveTo(x0, pad); ctx.lineTo(x0, h - pad); ctx.stroke() }
     if (y0 >= pad && y0 <= h - pad) { ctx.beginPath(); ctx.moveTo(pad, y0); ctx.lineTo(w - pad, y0); ctx.stroke() }
 
-    // Labels
     ctx.fillStyle = 'rgba(255,255,255,0.2)'
     ctx.font = '11px ' + getComputedStyle(document.body).fontFamily
     ctx.textAlign = 'center'
@@ -548,13 +681,11 @@
       ctx.fillText(formatNumber(y, y % 1 === 0 ? 0 : 2), pad - 8, yToPixel(y) + 4)
     }
 
-    // Plot with glow
     if (!expr) return
     try {
       const compiled = new Function('x', '"use strict"; return ' + parseExpression(expr))
       const accent = accentMap[state.accentColor] || '#42a5f5'
 
-      // Glow layer
       ctx.save()
       ctx.strokeStyle = accent
       ctx.lineWidth = 6
@@ -578,7 +709,6 @@
       ctx.stroke()
       ctx.restore()
 
-      // Main line
       ctx.save()
       ctx.strokeStyle = accent
       ctx.lineWidth = 2.5
@@ -604,7 +734,64 @@
     document.getElementById('graphZoomLabel').textContent = Math.round(graphState.zoom * 100) + '%'
   }
 
-  function resizeGraph () { drawGraph() }
+  // ============================
+  // HISTORY
+  // ============================
+  let currentHistoryType = 'escalas'
+
+  function getHistoryByType (type) {
+    switch (type) {
+      case 'escalas': return state.scaleHistory
+      case 'formulas': return state.formulaHistory
+      case 'cientifica': return state.sciHistory
+      default: return []
+    }
+  }
+
+  function renderHistory (searchTerm) {
+    const container = document.getElementById('historyGrouped')
+    const empty = document.getElementById('historyEmpty')
+    if (!container) return
+
+    let items = getHistoryByType(currentHistoryType)
+    if (searchTerm) {
+      const t = searchTerm.toLowerCase()
+      items = items.filter(h => h.formula.toLowerCase().includes(t))
+    }
+
+    if (items.length === 0) {
+      container.innerHTML = ''
+      empty.style.display = 'flex'
+      return
+    }
+    empty.style.display = 'none'
+
+    container.innerHTML = items.map(item => {
+      const typeIcons = { escalas: '📐', formulas: '📊', cientifica: '🔬' }
+      const icon = typeIcons[item.type] || ''
+      return `<div class="history-item">
+        <div class="history-item-info">
+          <div class="history-item-detail">
+            <span class="history-item-result">${icon} ${item.result}</span>
+            <span class="history-item-time">${item.date} ${item.time}</span>
+          </div>
+          <div class="history-item-formula">${item.formula}</div>
+        </div>
+        <button class="history-item-copy" data-id="${item.id}" data-type="${currentHistoryType}" title="Copiar">
+          <svg viewBox="0 0 24 24" width="16" height="16"><path d="M16 1H4a2 2 0 00-2 2v14h2V3h12V1zm3 4H8a2 2 0 00-2 2v14a2 2 0 002 2h11a2 2 0 002-2V7a2 2 0 00-2-2zm0 16H8V7h11v14z" fill="currentColor"/></svg>
+        </button>
+      </div>`
+    }).join('')
+  }
+
+  function switchHistoryTab (type) {
+    currentHistoryType = type
+    document.querySelectorAll('.history-tab').forEach(tab => {
+      tab.classList.toggle('active', tab.dataset.htype === type)
+    })
+    const searchVal = document.getElementById('historySearchInput')?.value || ''
+    renderHistory(searchVal)
+  }
 
   // ============================
   // COMMAND PALETTE
@@ -654,7 +841,6 @@
       group.style.display = 'none'
     }
 
-    // Quick calc
     const quickResult = document.getElementById('cmdQuickCalcResult')
     if (t && /[\d+\-*/().]/.test(t)) {
       try {
@@ -687,19 +873,73 @@
   // ============================
   // HELPERS
   // ============================
-  let calcTimeout
-  function triggerCalc () {
-    clearTimeout(calcTimeout)
-    calcTimeout = setTimeout(() => {
-      calculate()
-      const x = parseFloat(document.getElementById('calcInput').value)
-      if (!isNaN(x)) {
-        const mult = parseFloat(document.getElementById('multiplierInput').value) || 1
-        const div = parseFloat(document.getElementById('divisorInput').value) || 1
-        const result = roundValue((x * mult) / div, state.rounding)
-        addHistory(x, mult, div, formatNumber(result, state.rounding))
-      }
+  let quickScaleTimeout
+  function triggerQuickScale () {
+    clearTimeout(quickScaleTimeout)
+    quickScaleTimeout = setTimeout(() => {
+      const res = calculateScale()
+      if (res) addScaleHistory(res.x, res.mult, res.div, res.result)
     }, 350)
+  }
+
+  // ============================
+  // DRAW MINI GRAPH (DASHBOARD)
+  // ============================
+  function drawMiniGraph () {
+    const canvas = document.getElementById('dashMiniCanvas')
+    if (!canvas) return
+    const rect = canvas.parentElement.getBoundingClientRect()
+    const dpr = window.devicePixelRatio || 1
+    const w = canvas.offsetWidth || rect.width - 48 || 250
+    const h = canvas.offsetHeight || 120
+    canvas.width = w * dpr; canvas.height = h * dpr
+    canvas.style.width = w + 'px'; canvas.style.height = h + 'px'
+    const ctx = canvas.getContext('2d')
+    ctx.scale(dpr, dpr)
+
+    const xMin = -5, xMax = 5, yMin = -5, yMax = 5
+    const pad = 16
+    const plotW = w - pad * 2; const plotH = h - pad * 2
+    const xToPixel = x => pad + ((x - xMin) / (xMax - xMin)) * plotW
+    const yToPixel = y => pad + ((yMax - y) / (yMax - yMin)) * plotH
+
+    ctx.fillStyle = 'transparent'
+    ctx.clearRect(0, 0, w, h)
+
+    ctx.strokeStyle = 'rgba(255,255,255,0.05)'
+    ctx.lineWidth = 0.5
+    for (let x = -4; x <= 4; x += 2) {
+      const px = xToPixel(x)
+      ctx.beginPath(); ctx.moveTo(px, pad); ctx.lineTo(px, h - pad); ctx.stroke()
+    }
+    for (let y = -4; y <= 4; y += 2) {
+      const py = yToPixel(y)
+      ctx.beginPath(); ctx.moveTo(pad, py); ctx.lineTo(w - pad, py); ctx.stroke()
+    }
+
+    const accent = accentMap[state.accentColor] || '#42a5f5'
+    try {
+      const compiled = new Function('x', '"use strict"; return 2 * x + 3')
+      ctx.save()
+      ctx.strokeStyle = accent
+      ctx.lineWidth = 2
+      ctx.shadowColor = accent
+      ctx.shadowBlur = 6
+      ctx.globalAlpha = 0.6
+      ctx.beginPath()
+      let started = false
+      for (let i = 0; i <= 100; i++) {
+        const x = xMin + (i / 100) * (xMax - xMin)
+        const y = compiled(x)
+        if (isFinite(y) && y > -10 && y < 10) {
+          const px = xToPixel(x); const py = yToPixel(y)
+          if (!started) { ctx.moveTo(px, py); started = true }
+          else ctx.lineTo(px, py)
+        } else { started = false }
+      }
+      ctx.stroke()
+      ctx.restore()
+    } catch (e) {}
   }
 
   // ============================
@@ -747,22 +987,30 @@
       }
     })
 
-    // Calculator
+    // ===== SCALE CALCULATOR =====
     const calcInput = document.getElementById('calcInput')
     const multInput = document.getElementById('multiplierInput')
     const divInput = document.getElementById('divisorInput')
-    calcInput.addEventListener('input', triggerCalc)
-    multInput.addEventListener('input', triggerCalc)
-    divInput.addEventListener('input', triggerCalc)
+    if (calcInput) calcInput.addEventListener('input', triggerScaleCalc)
+    if (multInput) multInput.addEventListener('input', triggerScaleCalc)
+    if (divInput) divInput.addEventListener('input', triggerScaleCalc)
 
-    // Preset divisors
-    document.querySelectorAll('.preset-chip').forEach(btn => {
+    // Scale presets
+    document.querySelectorAll('.preset-chip.scale-preset').forEach(btn => {
       btn.addEventListener('click', () => {
-        document.querySelectorAll('.preset-chip').forEach(b => b.classList.remove('active'))
+        applyScalePreset(parseFloat(btn.dataset.scale))
+      })
+    })
+
+    // Divisor presets
+    document.querySelectorAll('.preset-chip[data-value]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.preset-chip.scale-preset').forEach(b => b.classList.remove('active'))
+        document.querySelectorAll('.preset-chip[data-value]').forEach(b => b.classList.remove('active'))
         btn.classList.add('active')
         if (btn.dataset.value === 'custom') { document.getElementById('divisorInput').focus(); return }
         document.getElementById('divisorInput').value = btn.dataset.value
-        triggerCalc()
+        triggerScaleCalc()
       })
     })
 
@@ -773,7 +1021,7 @@
         btn.classList.add('active')
         state.rounding = parseInt(btn.dataset.round) || 2
         persistState()
-        calculate()
+        calculateScale()
       })
     })
 
@@ -783,24 +1031,55 @@
       if (val && val !== '—') navigator.clipboard.writeText(val).then(() => showToast('Copiado: ' + val))
     })
 
-    // History actions
-    document.getElementById('copyAllHistory')?.addEventListener('click', () => {
-      if (state.history.length === 0) { showToast('Sin historial'); return }
-      navigator.clipboard.writeText(state.history.map(h => h.formula).join('\n')).then(() => showToast('Historial copiado'))
-    })
-    document.getElementById('deleteAllHistory')?.addEventListener('click', () => {
-      if (state.history.length === 0) { showToast('Sin historial'); return }
-      state.history = []; persistState(); renderHistory(); showToast('Historial eliminado')
-    })
-    document.getElementById('historyList')?.addEventListener('click', (e) => {
-      const btn = e.target.closest('.history-item-copy')
-      if (btn) {
-        const item = state.history.find(h => h.id === parseInt(btn.dataset.id))
-        if (item) navigator.clipboard.writeText(item.formula).then(() => showToast('Copiado'))
+    // ===== FORMULA CALCULATOR =====
+    const formulaCalcExprInput = document.getElementById('formulaCalcExpr')
+    if (formulaCalcExprInput) {
+      formulaCalcExprInput.addEventListener('input', formulaCalcUpdate)
+      formulaCalcExprInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') formulaCalcUpdate()
+      })
+    }
+
+    // Formula calc eval button
+    document.getElementById('formulaCalcEval')?.addEventListener('click', () => {
+      formulaCalcUpdate()
+      const expr = document.getElementById('formulaCalcExpr').value.trim()
+      const result = document.getElementById('formulaCalcResult').textContent
+      if (expr && result && result !== '—' && result !== 'Error') {
+        addFormulaHistory(expr, { ...formulaCalcVars }, result)
+        showToast('Resultado guardado en historial')
       }
     })
 
-    // Formulas
+    // Formula calc clear
+    document.getElementById('formulaCalcClear')?.addEventListener('click', formulaCalcClear)
+
+    // Formula calc copy
+    document.getElementById('formulaCalcCopy')?.addEventListener('click', () => {
+      const val = document.getElementById('formulaCalcResult').textContent
+      if (val && val !== '—') navigator.clipboard.writeText(val).then(() => showToast('Copiado: ' + val))
+    })
+
+    // Live variable input changes
+    document.getElementById('formulaCalcVars')?.addEventListener('input', (e) => {
+      const input = e.target.closest('.formula-calc-var-input')
+      if (input) formulaCalcUpdate()
+    })
+
+    // Toggle formula library visibility
+    document.getElementById('toggleFormulaLib')?.addEventListener('click', () => {
+      const grid = document.getElementById('formulaList')
+      const addBtn = document.querySelector('.add-formula-btn')
+      const catBar = document.getElementById('formulaCategories')
+      const searchBar = document.getElementById('formulaSearchBar')
+      const isHidden = grid.style.display === 'none'
+      grid.style.display = isHidden ? '' : 'none'
+      addBtn.style.display = isHidden ? '' : 'none'
+      catBar.style.display = isHidden ? '' : 'none'
+      searchBar.style.display = isHidden ? '' : 'none'
+    })
+
+    // ===== FORMULA LIBRARY =====
     document.querySelectorAll('.category-pill').forEach(btn => {
       btn.addEventListener('click', () => {
         document.querySelectorAll('.category-pill').forEach(b => b.classList.remove('active'))
@@ -810,11 +1089,55 @@
       })
     })
 
+    // Fav filter toggle
+    let favFilterActive = false
+    document.getElementById('favFilterToggle')?.addEventListener('click', () => {
+      favFilterActive = !favFilterActive
+      document.getElementById('favFilterToggle').classList.toggle('active', favFilterActive)
+      const cat = state.currentFormulaCategory
+      if (favFilterActive) {
+        const container = document.getElementById('formulaList')
+        const filtered = state.formulas.filter(f => f.category === cat && state.pinnedFormulas.includes(f.id))
+        if (filtered.length === 0) {
+          container.innerHTML = '<div class="formula-empty"><svg viewBox="0 0 24 24" width="36" height="36" opacity="0.3"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" fill="currentColor"/></svg><p>Sin fórmulas favoritas</p></div>'
+        } else {
+          container.innerHTML = filtered.map(f => {
+            const pinned = true
+            return `<div class="formula-item">
+              <div class="formula-item-header">
+                <span class="formula-item-name">${f.name}</span>
+                <div class="formula-item-actions">
+                  <button class="formula-item-action pin" data-id="${f.id}" title="Desfijar">
+                    <svg viewBox="0 0 24 24" width="14" height="14"><path d="M16 11c0 1.66-1.34 3-3 3h-2v5h-2v-5H7v-3h2V6c0-1.66 1.34-3 3-3s3 1.34 3 3v5h2v3h-1z" fill="#42a5f5"/></svg>
+                  </button>
+                  <button class="formula-item-action use" data-id="${f.id}" title="Usar en calculadora">
+                    <svg viewBox="0 0 24 24" width="14" height="14"><path d="M8 5v14l11-7z" fill="currentColor"/></svg>
+                  </button>
+                  <button class="formula-item-action delete-f" data-id="${f.id}" title="Eliminar">
+                    <svg viewBox="0 0 24 24" width="14" height="14"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" fill="currentColor"/></svg>
+                  </button>
+                </div>
+              </div>
+              <div class="formula-item-expr">y = ${rawToDisplay(f.expr)}</div>
+              ${f.desc ? `<div class="formula-item-desc">${f.desc}</div>` : ''}
+            </div>`
+          }).join('')
+        }
+      } else {
+        renderFormulas(document.getElementById('formulaSearchInput').value)
+      }
+      showToast(favFilterActive ? 'Mostrando solo favoritas' : 'Mostrando todas')
+    })
+
     document.getElementById('formulaList')?.addEventListener('click', (e) => {
       const useBtn = e.target.closest('.use')
       const delBtn = e.target.closest('.delete-f')
       const pinBtn = e.target.closest('.pin')
-      if (useBtn) useFormula(parseFloat(useBtn.dataset.id))
+      if (useBtn) {
+        const id = parseFloat(useBtn.dataset.id)
+        const f = state.formulas.find(f => f.id === id)
+        if (f) loadFormulaToCalc(f)
+      }
       if (delBtn) deleteFormula(parseFloat(delBtn.dataset.id))
       if (pinBtn) togglePin(parseFloat(pinBtn.dataset.id))
     })
@@ -854,12 +1177,25 @@
       showToast('Fórmula guardada')
     })
 
-    // Scientific calculator
+    // Formula expression input var preview
+    document.getElementById('formulaExpression')?.addEventListener('input', (e) => {
+      const vars = detectVariables(e.target.value)
+      const preview = document.getElementById('formulaVarsPreview')
+      const chips = document.getElementById('varsPreviewChips')
+      if (vars.length > 0) {
+        preview.style.display = 'block'
+        chips.innerHTML = vars.map(v => `<span class="formula-calc-var-chip" style="display:inline-flex;margin:2px"><span class="formula-calc-var-label">${v}</span></span>`).join('')
+      } else {
+        preview.style.display = 'none'
+      }
+    })
+
+    // ===== SCIENTIFIC CALCULATOR =====
     document.querySelectorAll('.sci-key').forEach(btn => {
       btn.addEventListener('click', () => sciInput(btn.dataset.action))
     })
 
-    // Graph
+    // ===== GRAPH =====
     document.getElementById('graphBtn')?.addEventListener('click', () => {
       const input = document.getElementById('graphInput')
       graphState.expr = input.value.trim() || '2*x+3'
@@ -882,7 +1218,6 @@
 
     const canvas = document.getElementById('graphCanvas')
 
-    // Wheel zoom
     canvas.addEventListener('wheel', (e) => {
       e.preventDefault()
       const delta = e.deltaY > 0 ? 1.1 : 0.9
@@ -896,7 +1231,6 @@
       drawGraph()
     }, { passive: false })
 
-    // Mouse drag
     canvas.addEventListener('mousedown', (e) => {
       isDragging = true
       dragStartX = e.clientX; dragStartY = e.clientY
@@ -915,7 +1249,6 @@
     })
     window.addEventListener('mouseup', () => { isDragging = false })
 
-    // Touch drag
     let touchStartX = 0, touchStartY = 0, touchDist = 0
     let tsXMin, tsXMax, tsYMin, tsYMax
 
@@ -958,7 +1291,6 @@
 
     canvas.addEventListener('touchend', () => { isDragging = false })
 
-    // Graph reset
     document.getElementById('graphReset')?.addEventListener('click', () => {
       graphState.xMin = -10; graphState.xMax = 10
       graphState.yMin = -10; graphState.yMax = 10
@@ -966,25 +1298,69 @@
       drawGraph()
     })
 
-    // Graph fullscreen
     document.getElementById('graphFullscreen')?.addEventListener('click', () => {
       const wrap = document.getElementById('graphWrap')
       if (wrap.requestFullscreen) wrap.requestFullscreen()
       else if (wrap.webkitRequestFullscreen) wrap.webkitRequestFullscreen()
     })
 
-    // Resize
     let resizeTimer
     window.addEventListener('resize', () => {
       clearTimeout(resizeTimer)
-      resizeTimer = setTimeout(resizeGraph, 200)
+      resizeTimer = setTimeout(() => {
+        drawGraph()
+        drawMiniGraph()
+      }, 200)
     })
 
-    // Settings
+    // ===== HISTORY =====
+    document.querySelectorAll('.history-tab').forEach(tab => {
+      tab.addEventListener('click', () => switchHistoryTab(tab.dataset.htype))
+    })
+
+    document.getElementById('historySearchInput')?.addEventListener('input', (e) => {
+      renderHistory(e.target.value)
+    })
+
+    document.getElementById('historySearchBtn')?.addEventListener('click', () => {
+      const controls = document.getElementById('historyControls')
+      controls.style.display = controls.style.display === 'none' ? 'flex' : 'none'
+      if (controls.style.display === 'flex') {
+        document.getElementById('historySearchInput').focus()
+      }
+    })
+
+    document.getElementById('copyAllHistory')?.addEventListener('click', () => {
+      const items = getHistoryByType(currentHistoryType)
+      if (items.length === 0) { showToast('Sin historial'); return }
+      navigator.clipboard.writeText(items.map(h => h.formula).join('\n')).then(() => showToast('Historial copiado'))
+    })
+
+    document.getElementById('deleteAllHistory')?.addEventListener('click', () => {
+      const items = getHistoryByType(currentHistoryType)
+      if (items.length === 0) { showToast('Sin historial'); return }
+      const type = currentHistoryType
+      if (type === 'escalas') state.scaleHistory = []
+      else if (type === 'formulas') state.formulaHistory = []
+      else if (type === 'cientifica') state.sciHistory = []
+      persistState(); renderHistory(); showToast('Historial eliminado')
+    })
+
+    document.getElementById('historyGrouped')?.addEventListener('click', (e) => {
+      const btn = e.target.closest('.history-item-copy')
+      if (btn) {
+        const items = getHistoryByType(btn.dataset.type)
+        const item = items.find(h => h.id === parseInt(btn.dataset.id))
+        if (item) navigator.clipboard.writeText(item.formula).then(() => showToast('Copiado'))
+      }
+    })
+
+    // ===== SETTINGS =====
     document.getElementById('settingDecimals')?.addEventListener('change', (e) => {
       state.rounding = parseInt(e.target.value) || 2
       document.querySelectorAll('.rounding-chip').forEach(b => b.classList.toggle('active', parseInt(b.dataset.round) === state.rounding))
-      persistState(); calculate()
+      persistState()
+      calculateScale()
     })
 
     document.getElementById('settingAnimations')?.addEventListener('change', (e) => {
@@ -997,12 +1373,14 @@
       btn.addEventListener('click', () => {
         applyAccentColor(btn.dataset.color)
         if (state.currentSection === 'graficos') drawGraph()
+        drawMiniGraph()
       })
     })
 
     document.getElementById('clearAllData')?.addEventListener('click', () => {
       if (confirm('¿Borrar todos los datos? Esta acción no se puede deshacer.')) {
-        state.history = []; state.formulas = []; state.pinnedFormulas = []
+        state.scaleHistory = []; state.formulaHistory = []; state.sciHistory = []
+        state.formulas = []; state.pinnedFormulas = []
         persistState(); renderHistory(); initFormulas(); updateDashboard()
         showToast('Todos los datos eliminados')
       }
@@ -1039,7 +1417,7 @@
       e.target.value = ''
     })
 
-    // Command palette
+    // ===== COMMAND PALETTE =====
     document.getElementById('cmdPalette')?.addEventListener('click', (e) => {
       if (e.target === e.currentTarget) closeCmd()
     })
@@ -1051,7 +1429,6 @@
     document.getElementById('cmdInput')?.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') { closeCmd(); return }
       if (e.key === 'Enter') {
-        // Find first visible cmd-item and click it
         const first = document.querySelector('.cmd-item:not([style*="display: none"])')
         if (first) { first.click(); closeCmd() }
       }
@@ -1063,52 +1440,247 @@
       const action = item.dataset.action
       const value = item.dataset.value
       if (action === 'nav') { closeCmd(); navigateTo(value) }
-      if (action === 'formula') { closeCmd(); useFormula(parseFloat(value)) }
+      if (action === 'formula') {
+        closeCmd()
+        const f = state.formulas.find(f => f.id === parseFloat(value))
+        if (f) loadFormulaToCalc(f)
+      }
     })
 
-    // Dashboard quick actions
+    // ===== DASHBOARD =====
     document.querySelectorAll('.dash-action').forEach(btn => {
-      btn.addEventListener('click', () => navigateTo(btn.dataset.action))
+      btn.addEventListener('click', () => {
+        const action = btn.dataset.action
+        if (action === 'nueva-formula') {
+          document.getElementById('formulaModal').classList.add('open')
+          document.getElementById('formulaName').value = ''
+          document.getElementById('formulaExpression').value = ''
+          document.getElementById('formulaDesc').value = ''
+        } else {
+          navigateTo(action)
+        }
+      })
     })
 
     document.querySelectorAll('.dash-see-all').forEach(btn => {
       btn.addEventListener('click', () => navigateTo(btn.dataset.section))
     })
 
-    // Dashboard pinned click
-    document.getElementById('dashPinnedList')?.addEventListener('click', (e) => {
-      const item = e.target.closest('.dash-pinned-item')
-      if (item) useFormula(parseFloat(item.dataset.id))
+    document.querySelectorAll('.dash-category-chip').forEach(btn => {
+      btn.addEventListener('click', () => {
+        navigateTo('formulas')
+        document.querySelectorAll('.category-pill').forEach(b => b.classList.remove('active'))
+        const target = document.querySelector(`.category-pill[data-category="${btn.dataset.category}"]`)
+        if (target) {
+          target.classList.add('active')
+          state.currentFormulaCategory = btn.dataset.category
+          renderFormulas()
+        }
+      })
     })
 
-    // Apply settings
+    document.getElementById('dashPinnedList')?.addEventListener('click', (e) => {
+      const item = e.target.closest('.dash-pinned-item')
+      if (item) {
+        const id = parseFloat(item.dataset.id)
+        const f = state.formulas.find(f => f.id === id)
+        if (f) loadFormulaToCalc(f)
+      }
+    })
+
+    // ===== PWA INSTALL PROMPT =====
+    let deferredPrompt = null
+    let isInstalled = false
+
+    // Check if already installed (display-mode: standalone)
+    if (window.matchMedia('(display-mode: standalone)').matches ||
+        window.navigator.standalone === true) {
+      isInstalled = true
+    }
+
+    // Listen for beforeinstallprompt
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault()
+      deferredPrompt = e
+      updateInstallButton()
+    })
+
+    // Handle app install
+    window.addEventListener('appinstalled', () => {
+      isInstalled = true
+      deferredPrompt = null
+      hideInstallButton()
+      showToast('ARC instalada correctamente')
+    })
+
+    function updateInstallButton () {
+      const btn = document.getElementById('installBtn')
+      const settingsBtn = document.getElementById('settingsInstallBtn')
+      if (!btn) return
+      if (deferredPrompt && !isInstalled) {
+        btn.style.display = 'flex'
+        if (settingsBtn) settingsBtn.textContent = 'Instalar'
+      } else {
+        hideInstallButton()
+      }
+    }
+
+    function hideInstallButton () {
+      const btn = document.getElementById('installBtn')
+      if (btn) btn.style.display = 'none'
+      const settingsBtn = document.getElementById('settingsInstallBtn')
+      if (settingsBtn) settingsBtn.textContent = 'Instalada'
+    }
+
+    function triggerInstall () {
+      if (!deferredPrompt) {
+        // If no deferred prompt (iOS or already installed), show install modal
+        if (isIOS() && !isInstalled) {
+          document.getElementById('installModal').classList.add('open')
+        } else if (!isInstalled) {
+          showToast('ARC ya está instalada o no disponible para instalar')
+        }
+        return
+      }
+      deferredPrompt.prompt()
+      deferredPrompt.userChoice.then((choice) => {
+        if (choice.outcome === 'accepted') {
+          isInstalled = true
+          hideInstallButton()
+        }
+        deferredPrompt = null
+      })
+    }
+
+    // Floating install button
+    document.getElementById('installBtn')?.addEventListener('click', triggerInstall)
+
+    // Settings install button
+    document.getElementById('settingsInstallBtn')?.addEventListener('click', (e) => {
+      e.preventDefault()
+      triggerInstall()
+    })
+
+    // Install modal close
+    document.getElementById('installModalClose')?.addEventListener('click', () => {
+      document.getElementById('installModal').classList.remove('open')
+    })
+
+    // Close install modal on overlay click
+    document.getElementById('installModal')?.addEventListener('click', (e) => {
+      if (e.target === e.currentTarget) {
+        document.getElementById('installModal').classList.remove('open')
+      }
+    })
+
+    function isIOS () {
+      return /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+        (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+    }
+
+    // Show install modal automatically for iOS users after 2s if not installed
+    if (isIOS() && !isInstalled) {
+      setTimeout(() => {
+        if (!isInstalled && !deferredPrompt) {
+          // Don't auto-show, just update button
+        }
+      }, 3000)
+    }
+
+    // ===== OFFLINE / ONLINE DETECTION =====
+    function updateOnlineStatus () {
+      const indicator = document.getElementById('offlineIndicator')
+      const statusValue = document.getElementById('appStatusValue')
+      if (!navigator.onLine) {
+        if (indicator) indicator.style.display = 'flex'
+        if (statusValue) {
+          statusValue.textContent = 'Sin conexión'
+          statusValue.style.color = 'var(--danger)'
+        }
+      } else {
+        if (indicator) indicator.style.display = 'none'
+        if (statusValue) {
+          statusValue.textContent = 'En línea'
+          statusValue.style.color = 'var(--accent-light)'
+        }
+      }
+    }
+
+    window.addEventListener('online', updateOnlineStatus)
+    window.addEventListener('offline', updateOnlineStatus)
+    updateOnlineStatus()
+
+    // ===== APP VERSION =====
+    document.getElementById('appVersionValue').textContent = state.version || '2.0.0'
+
+    // ===== CLEAR CACHE =====
+    document.getElementById('clearCacheBtn')?.addEventListener('click', () => {
+      if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+        navigator.serviceWorker.controller.postMessage({ type: 'CLEAR_CACHE' })
+      }
+      // Also clear localStorage backup
+      showToast('Cache limpiada')
+      setTimeout(() => {
+        window.location.reload()
+      }, 500)
+    })
+
+    // Listen for SW messages
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.addEventListener('message', (e) => {
+        if (e.data?.type === 'CACHE_CLEARED') {
+          showToast('Cache eliminada correctamente')
+        }
+        if (e.data?.type === 'SW_VERSION') {
+          console.log('SW version:', e.data.version)
+        }
+      })
+    }
+
+    // ===== APPLY SETTINGS =====
     applyAccentColor(state.accentColor)
 
     document.querySelectorAll('.rounding-chip').forEach(b => {
       b.classList.toggle('active', parseInt(b.dataset.round) === state.rounding)
     })
 
-    const divVal = parseFloat(document.getElementById('divisorInput').value)
-    document.querySelectorAll('.preset-chip').forEach(b => {
-      if (b.dataset.value === String(divVal)) b.classList.add('active')
-    })
-
-    // Init
+    // ===== INIT =====
     navigateTo(state.currentSection)
-    renderHistory()
+    switchHistoryTab('escalas')
     initFormulas()
-    calculate()
+    calculateScale()
 
     requestAnimationFrame(() => {
       setTimeout(() => {
-        graphState.expr = '2*x+3'
         drawGraph()
+        drawMiniGraph()
       }, 150)
     })
 
-    // Register SW
+    // Register SW with update handling
     if ('serviceWorker' in navigator) {
-      try { navigator.serviceWorker.register('sw.js') } catch (e) {}
+      navigator.serviceWorker.register('sw.js').then((registration) => {
+        // Check for updates
+        registration.addEventListener('updatefound', () => {
+          const newWorker = registration.installing
+          newWorker.addEventListener('statechange', () => {
+            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              // New version available
+              showToast('Nueva versión disponible. Actualizando...')
+              newWorker.postMessage({ type: 'SKIP_WAITING' })
+              setTimeout(() => window.location.reload(), 1000)
+            }
+          })
+        })
+      }).catch(() => {})
+
+      // Reload on controller change
+      let refreshing = false
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (refreshing) return
+        refreshing = true
+        window.location.reload()
+      })
     }
   }
 

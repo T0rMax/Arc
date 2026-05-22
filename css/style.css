@@ -419,6 +419,12 @@ body {
 
 .header-icon-btn:active { transform: scale(0.92); }
 
+.header-icon-btn.active {
+  background: var(--accent-glow);
+  color: var(--accent-light);
+  border-color: var(--accent);
+}
+
 .header-icon-btn.danger:hover {
   background: var(--danger-glow);
   color: var(--danger);
@@ -2016,6 +2022,669 @@ body {
 }
 
 /* =============================================
+   DASHBOARD CONTAINER
+   ============================================= */
+.dash-container {
+  padding: 0 28px 28px;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.dash-widgets {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-top: 20px;
+}
+
+.dash-widget {
+  padding: 22px 24px;
+}
+
+.dash-widget .dash-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 0;
+  color: var(--text-tertiary);
+  text-align: center;
+  gap: 8px;
+}
+
+.dash-widget .dash-empty p {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.dash-datetime {
+  font-size: 14px;
+  color: var(--text-tertiary);
+  font-weight: 400;
+}
+
+.dash-category-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.dash-category-chip {
+  padding: 7px 16px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid var(--glass-border);
+  border-radius: 20px;
+  color: var(--text-secondary);
+  font-family: var(--font);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--transition-spring);
+}
+
+.dash-category-chip:hover {
+  background: rgba(255,255,255,0.08);
+  color: var(--text-primary);
+  transform: translateY(-1px);
+}
+
+.dash-category-chip:active { transform: scale(0.95); }
+
+.dash-mini-canvas {
+  width: 100%;
+  height: 120px;
+  border-radius: var(--radius-xs);
+  display: block;
+}
+
+/* =============================================
+   FORMULA CALCULATOR PANEL
+   ============================================= */
+.formula-calc-panel {
+  padding: 20px 24px;
+  margin-bottom: 18px;
+  position: relative;
+  overflow: hidden;
+}
+
+.formula-calc-panel::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--accent-glow), transparent);
+}
+
+.formula-calc-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.formula-calc-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.formula-calc-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.formula-calc-name {
+  font-size: 13px;
+  color: var(--accent-light);
+  font-weight: 500;
+}
+
+.formula-calc-clear {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid var(--glass-border);
+  color: var(--text-tertiary);
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  line-height: 1;
+  transition: var(--transition);
+}
+
+.formula-calc-clear:hover {
+  background: var(--danger-glow);
+  color: var(--danger);
+  border-color: var(--danger);
+}
+
+.formula-calc-expr-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.formula-calc-prefix {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+  font-family: var(--font-mono);
+}
+
+.formula-calc-expr-input {
+  flex: 1;
+  padding: 12px 16px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 17px;
+  font-weight: 500;
+  outline: none;
+  transition: var(--transition);
+}
+
+.formula-calc-expr-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
+.formula-calc-expr-input::placeholder {
+  color: var(--text-tertiary);
+  font-family: var(--font);
+}
+
+.formula-calc-eval-btn {
+  padding: 12px 20px;
+  background: linear-gradient(135deg, var(--accent-dark), var(--accent));
+  border: none;
+  border-radius: var(--radius-sm);
+  color: #fff;
+  font-family: var(--font);
+  font-size: 20px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: var(--transition-spring);
+  flex-shrink: 0;
+  box-shadow: 0 4px 12px var(--accent-glow);
+  min-width: 52px;
+}
+
+.formula-calc-eval-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px var(--accent-glow-strong);
+}
+
+.formula-calc-eval-btn:active { transform: scale(0.95); }
+
+.formula-calc-vars {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 16px;
+  min-height: 0;
+  transition: var(--transition);
+}
+
+.formula-calc-var-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px 6px 16px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--glass-border);
+  border-radius: 20px;
+  transition: var(--transition-spring);
+  animation: varIn 0.25s ease;
+}
+
+@keyframes varIn {
+  from { opacity: 0; transform: scale(0.85); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.formula-calc-var-chip:hover {
+  background: rgba(255,255,255,0.07);
+  border-color: var(--accent);
+}
+
+.formula-calc-var-label {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--accent-light);
+  font-family: var(--font-mono);
+  min-width: 16px;
+  text-align: center;
+}
+
+.formula-calc-var-input {
+  width: 80px;
+  padding: 6px 10px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid var(--glass-border);
+  border-radius: 10px;
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 500;
+  outline: none;
+  transition: var(--transition);
+  text-align: right;
+}
+
+.formula-calc-var-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-glow);
+}
+
+.formula-calc-var-input::-webkit-inner-spin-button,
+.formula-calc-var-input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+
+.formula-calc-result-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-sm);
+  position: relative;
+  overflow: hidden;
+}
+
+.formula-calc-result-row::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 3px;
+  height: 100%;
+  background: linear-gradient(180deg, var(--accent), transparent);
+  border-radius: 3px;
+}
+
+.formula-calc-result-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  flex-shrink: 0;
+}
+
+.formula-calc-result-value {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--accent-light);
+  font-family: var(--font-mono);
+  letter-spacing: -1px;
+  flex: 1;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  transition: var(--transition);
+  min-height: 40px;
+}
+
+.formula-calc-copy {
+  background: var(--bg-card);
+  border: 1px solid var(--glass-border);
+  color: var(--text-tertiary);
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition-spring);
+  flex-shrink: 0;
+}
+
+.formula-calc-copy:hover {
+  background: var(--bg-card-hover);
+  color: var(--accent-light);
+  border-color: var(--accent);
+  transform: scale(1.05);
+}
+
+.formula-calc-copy:active { transform: scale(0.9); }
+
+/* =============================================
+   SCALE PRESET STYLING
+   ============================================= */
+.preset-chip.scale-preset {
+  background: rgba(66,165,245,0.08);
+  border-color: rgba(66,165,245,0.2);
+  color: var(--accent-light);
+  font-weight: 600;
+}
+
+.preset-chip.scale-preset:hover {
+  background: rgba(66,165,245,0.15);
+  border-color: var(--accent);
+}
+
+.preset-chip.scale-preset.active {
+  background: var(--accent-glow);
+  border-color: var(--accent);
+  color: #fff;
+  box-shadow: 0 0 16px var(--accent-glow);
+}
+
+/* =============================================
+   HISTORY TABS
+   ============================================= */
+.history-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 6px;
+  margin-bottom: 16px;
+}
+
+.history-tab {
+  flex: 1;
+  padding: 10px 16px;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-xs);
+  color: var(--text-tertiary);
+  font-family: var(--font);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--transition);
+  text-align: center;
+}
+
+.history-tab:hover {
+  color: var(--text-secondary);
+  background: rgba(255,255,255,0.04);
+}
+
+.history-tab.active {
+  background: var(--accent-glow);
+  color: var(--accent-light);
+  font-weight: 600;
+}
+
+.history-tab:active { transform: scale(0.97); }
+
+/* =============================================
+   INSTALL BUTTON
+   ============================================= */
+.install-btn {
+  position: fixed;
+  bottom: calc(var(--nav-height) + 24px);
+  right: 24px;
+  z-index: 500;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 24px;
+  background: linear-gradient(135deg, var(--accent-dark), var(--accent));
+  border: none;
+  border-radius: 50px;
+  color: #fff;
+  font-family: var(--font);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition-spring);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.08);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  animation: installBtnIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.install-btn:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.12);
+}
+
+.install-btn:active {
+  transform: scale(0.96);
+}
+
+.install-btn-icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  animation: installBounce 2s ease-in-out infinite;
+}
+
+@keyframes installBtnIn {
+  from { opacity: 0; transform: translateY(20px) scale(0.9); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes installBounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+
+.install-btn.hidden {
+  opacity: 0;
+  transform: translateY(20px) scale(0.9);
+  pointer-events: none;
+  transition: var(--transition);
+}
+
+.install-btn.settings-install {
+  position: static;
+  animation: none;
+  padding: 12px 24px;
+  font-size: 14px;
+  box-shadow: 0 4px 16px var(--accent-glow);
+}
+
+/* =============================================
+   INSTALL MODAL
+   ============================================= */
+.install-modal-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 28px 24px 8px;
+  gap: 12px;
+}
+
+.install-modal-icon {
+  width: 72px;
+  height: 72px;
+  border-radius: 20px;
+  background: linear-gradient(135deg, rgba(66,165,245,0.15), rgba(66,165,245,0.05));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent-light);
+  border: 1px solid rgba(66,165,245,0.15);
+}
+
+.install-modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.install-modal-desc {
+  font-size: 14px;
+  color: var(--text-secondary);
+  text-align: center;
+  line-height: 1.5;
+}
+
+.install-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.install-step {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 16px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-sm);
+  transition: var(--transition);
+}
+
+.install-step:hover {
+  background: rgba(255,255,255,0.06);
+  border-color: var(--glass-border-hover);
+}
+
+.install-step-num {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--accent-glow);
+  border: 1px solid var(--accent);
+  color: var(--accent-light);
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.install-step-text {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.install-step-text strong {
+  color: var(--text-primary);
+}
+
+/* =============================================
+   OFFLINE INDICATOR
+   ============================================= */
+.offline-indicator {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: rgba(239,83,80,0.15);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(239,83,80,0.2);
+  color: var(--danger);
+  font-size: 12px;
+  font-weight: 500;
+  font-family: var(--font);
+  animation: offlineSlideIn 0.3s ease;
+}
+
+.offline-icon {
+  flex-shrink: 0;
+  animation: offlinePulse 2s ease-in-out infinite;
+}
+
+@keyframes offlineSlideIn {
+  from { transform: translateY(-100%); }
+  to { transform: translateY(0); }
+}
+
+@keyframes offlinePulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+/* =============================================
+   APP LAUNCH FADE-IN
+   ============================================= */
+#app {
+  opacity: 1;
+  transition: opacity 0.4s ease;
+}
+
+/* =============================================
+   SAFE AREA & MOBILE OPTIMIZATIONS
+   ============================================= */
+@supports (padding-top: env(safe-area-inset-top)) {
+  .offline-indicator {
+    padding-top: max(8px, env(safe-area-inset-top, 0px));
+  }
+
+  .content {
+    padding-left: env(safe-area-inset-left, 0px);
+    padding-right: env(safe-area-inset-right, 0px);
+  }
+
+  .bottom-nav {
+    padding-bottom: max(4px, env(safe-area-inset-bottom, 0px));
+  }
+}
+
+/* Touch optimization - larger tap targets on mobile */
+@media (hover: none) and (pointer: coarse) {
+  .nav-item,
+  .bnav-item,
+  .dash-action,
+  .sci-key,
+  .preset-chip,
+  .rounding-chip,
+  .category-pill,
+  .formula-item-action,
+  .history-item-copy,
+  .result-copy-btn,
+  .header-icon-btn {
+    cursor: default;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .sci-key {
+    min-height: 48px;
+  }
+
+  .preset-chip,
+  .rounding-chip,
+  .category-pill {
+    padding: 8px 18px;
+  }
+
+  input, select, button {
+    font-size: 16px;
+  }
+}
+
+/* Prevent text selection on UI elements */
+.nav-item, .bnav-item, .sci-key, .preset-chip,
+.rounding-chip, .category-pill, .install-btn {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Momentum scrolling on content */
+.content {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+/* =============================================
    RESPONSIVE
    ============================================= */
 
@@ -2042,6 +2711,13 @@ body {
 
   .content {
     padding-bottom: calc(var(--nav-height) + 12px);
+  }
+
+  .install-btn {
+    bottom: calc(var(--nav-height) + 16px);
+    right: 16px;
+    padding: 12px 20px;
+    font-size: 13px;
   }
 
   .section-title { font-size: 22px; }
@@ -2125,6 +2801,24 @@ body {
 
   .modal-overlay { padding: 16px; }
 
+  .dash-container { padding: 0 16px 20px; }
+  .dash-widgets { grid-template-columns: 1fr; gap: 14px; }
+  .dash-widget { padding: 18px; }
+  .dash-mini-canvas { height: 100px; }
+  .dash-category-chip { font-size: 11px; padding: 6px 14px; }
+
+  .formula-calc-panel { padding: 16px 18px; }
+  .formula-calc-expr-input { font-size: 15px; padding: 10px 14px; }
+  .formula-calc-expr-row { gap: 8px; }
+  .formula-calc-prefix { font-size: 17px; }
+  .formula-calc-eval-btn { padding: 10px 16px; font-size: 18px; min-width: 44px; }
+  .formula-calc-var-input { width: 64px; font-size: 13px; }
+  .formula-calc-result-value { font-size: 26px; min-height: 34px; }
+  .formula-calc-vars { gap: 8px; }
+
+  .history-tabs { padding: 4px; gap: 3px; }
+  .history-tab { font-size: 12px; padding: 8px 12px; }
+
   .cmd-quick-calc-row {
     flex-direction: column;
     gap: 8px;
@@ -2143,12 +2837,17 @@ body {
 
   .content { padding-bottom: 24px; }
 
+  .install-btn {
+    bottom: 40px;
+    right: 40px;
+    padding: 16px 28px;
+    font-size: 15px;
+  }
+
   .section-header { padding: 24px 36px 20px; }
 
-  .dashboard-grid {
-    padding: 0 36px 32px;
-    gap: 24px;
-  }
+  .dash-container { padding: 0 36px 32px; }
+  .dash-widgets { gap: 24px; }
 
   .dash-welcome { padding: 32px 36px; }
   .dash-greeting { font-size: 30px; }
@@ -2186,6 +2885,15 @@ body {
   .settings-container { padding: 0 36px 32px; }
   .settings-group { padding: 26px 28px; }
   .setting-name { font-size: 16px; }
+
+  .dash-container { padding: 0 36px 32px; }
+  .formula-calc-panel { padding: 24px 28px; }
+  .formula-calc-expr-input { font-size: 18px; padding: 14px 18px; }
+  .formula-calc-eval-btn { padding: 14px 22px; }
+  .formula-calc-result-value { font-size: 36px; }
+  .formula-calc-var-input { width: 90px; }
+  .history-tabs { margin-bottom: 20px; }
+  .history-tab { font-size: 14px; padding: 12px 18px; }
 
   .cmd-overlay { padding: 10vh 24px 24px; }
   .cmd-modal { max-width: 600px; }
@@ -2232,10 +2940,11 @@ body {
   .result-value { font-size: 42px; }
   .result-label { font-size: 12px; }
 
-  .dashboard-grid { max-width: 1200px; }
+  .dash-container { max-width: 1200px; }
   .dash-actions-grid { grid-template-columns: repeat(4, 1fr); }
   .dash-recent-item-result { font-size: 20px; }
   .dash-pinned-item { font-size: 15px; padding: 12px 16px; }
+  .dash-widgets { gap: 24px; }
 
   .formula-categories { gap: 8px; }
   .category-pill { padding: 9px 22px; font-size: 14px; }
@@ -2282,9 +2991,11 @@ body {
 
   .section-header { padding: 28px 40px 24px; }
 
-  .dashboard-grid {
+  .dash-container {
     padding: 0 40px 36px;
     max-width: 1400px;
+  }
+  .dash-widgets {
     gap: 28px;
   }
 
@@ -2299,6 +3010,10 @@ body {
 
   .formulas-container { max-width: 860px; }
   .formula-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+  .formula-calc-panel { padding: 28px 32px; }
+  .formula-calc-expr-input { font-size: 19px; }
+  .formula-calc-result-value { font-size: 40px; }
+  .formula-calc-var-input { width: 100px; }
 
   .sci-container { max-width: 520px; }
   .sci-result { font-size: 54px; }

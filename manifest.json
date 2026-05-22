@@ -1,17 +1,63 @@
 {
-  "name": "ARC — Plataforma de Cálculos",
+  "name": "ARC — Plataforma profesional de cálculos",
   "short_name": "ARC",
-  "description": "Plataforma profesional de cálculos para arquitectura e ingeniería",
-  "start_url": "/arc/index.html",
+  "description": "Plataforma profesional de cálculos para arquitectura e ingeniería. Calculadora de escalas, fórmulas dinámicas, calculadora científica y gráficos.",
+  "start_url": "/index.html",
   "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
   "orientation": "portrait-primary",
   "background_color": "#000000",
-  "theme_color": "#070707",
-  "scope": "/arc/",
+  "theme_color": "#000000",
+  "scope": "/",
   "lang": "es",
+  "dir": "ltr",
   "categories": ["education", "productivity", "utilities"],
+  "prefer_related_applications": false,
+  "id": "/?source=pwa",
+  "launch_handler": {
+    "client_mode": "focus-existing"
+  },
+  "edge_side_panel": {
+    "preferred_width": 480
+  },
   "icons": [
-    { "src": "icons/icon-192.svg", "sizes": "192x192", "type": "image/svg+xml", "purpose": "any maskable" },
-    { "src": "icons/icon-512.svg", "sizes": "512x512", "type": "image/svg+xml", "purpose": "any maskable" }
+    { "src": "icons/icon-192.svg", "sizes": "192x192", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "icons/icon-192.svg", "sizes": "192x192", "type": "image/svg+xml", "purpose": "maskable" },
+    { "src": "icons/icon-512.svg", "sizes": "512x512", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "icons/icon-512.svg", "sizes": "512x512", "type": "image/svg+xml", "purpose": "maskable" },
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    {
+      "name": "Calculadora de Escalas",
+      "short_name": "Escalas",
+      "description": "Abrir calculadora de escalas",
+      "url": "/index.html#section-escalas",
+      "icons": [{ "src": "icons/icon-192.svg", "sizes": "192x192" }]
+    },
+    {
+      "name": "Calculadora de Fórmulas",
+      "short_name": "Fórmulas",
+      "description": "Abrir calculadora de fórmulas",
+      "url": "/index.html#section-formulas",
+      "icons": [{ "src": "icons/icon-192.svg", "sizes": "192x192" }]
+    },
+    {
+      "name": "Calculadora Científica",
+      "short_name": "Científica",
+      "description": "Abrir calculadora científica",
+      "url": "/index.html#section-cientifica",
+      "icons": [{ "src": "icons/icon-192.svg", "sizes": "192x192" }]
+    },
+    {
+      "name": "Gráficos",
+      "short_name": "Gráficos",
+      "description": "Abrir graficador de funciones",
+      "url": "/index.html#section-graficos",
+      "icons": [{ "src": "icons/icon-192.svg", "sizes": "192x192" }]
+    }
   ]
 }
