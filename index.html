@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1, user-scalable=no">
+  <meta name="theme-color" content="#0a0a0a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="ARC">
+  <meta name="description" content="Calculadora inteligente para arquitectura e ingeniería">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icons/icon-192.svg">
+  <link rel="icon" type="image/svg+xml" href="icons/icon-192.svg">
+  <title>ARC - Calculadora de Arquitectura</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div id="app">
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-logo">
+        <svg viewBox="0 0 36 36" class="logo-icon">
+          <defs>
+            <linearGradient id="lg" x1="0" y1="0" x2="36" y2="36">
+              <stop offset="0%" stop-color="#64b5f6"/>
+              <stop offset="100%" stop-color="#42a5f5"/>
+            </linearGradient>
+          </defs>
+          <rect width="36" height="36" rx="8" fill="url(#lg)" opacity="0.15"/>
+          <text x="18" y="25" text-anchor="middle" font-family="system-ui" font-weight="800" font-size="18" fill="url(#lg)">A</text>
+        </svg>
+        <span class="logo-text">ARC</span>
+      </div>
+    </div>
+    <nav class="sidebar-nav" id="sidebarNav">
+      <button class="nav-item active" data-section="calculadora">
+        <svg viewBox="0 0 24 24" class="nav-icon"><path d="M7 2h10a3 3 0 013 3v14a3 3 0 01-3 3H7a3 3 0 01-3-3V5a3 3 0 013-3zm0 2a1 1 0 00-1 1v14a1 1 0 001 1h10a1 1 0 001-1V5a1 1 0 00-1-1H7zM9 6h6v2H9V6zm0 4h6v2H9v-2zm0 4h4v2H9v-2z" fill="currentColor"/></svg>
+        <span>Calculadora</span>
+      </button>
+      <button class="nav-item" data-section="formulas">
+        <svg viewBox="0 0 24 24" class="nav-icon"><path d="M4 6a2 2 0 012-2h12a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V6zm2 0v12h12V6H6zm3 2h6v2H9V8zm0 4h6v2H9v-2zm0 4h4v2H9v-2z" fill="currentColor"/></svg>
+        <span>Fórmulas</span>
+      </button>
+      <button class="nav-item" data-section="cientifica">
+        <svg viewBox="0 0 24 24" class="nav-icon"><path d="M12 2a10 10 0 0110 10c0 3.37-1.66 6.34-4.22 8.22l-1.42-1.42A7.98 7.98 0 0020 12 8 8 0 104 12c0 2.19.88 4.17 2.3 5.62L4.88 19A9.96 9.96 0 012 12 10 10 0 0112 2zm0 4a6 6 0 016 6c0 1.97-.95 3.73-2.43 4.84l-1.42-1.42A3.99 3.99 0 0016 12a4 4 0 10-6.15 3.42l-1.42 1.42A5.98 5.98 0 016 12a6 6 0 016-6zm0 4a2 2 0 110 4 2 2 0 010-4z" fill="currentColor"/></svg>
+        <span>Científica</span>
+      </button>
+      <button class="nav-item" data-section="graficos">
+        <svg viewBox="0 0 24 24" class="nav-icon"><path d="M3 3v18h18v-2H5V3H3zm4 4v10h2V7H7zm4 3v7h2v-7h-2zm4-3v10h2V7h-2z" fill="currentColor"/></svg>
+        <span>Gráficos</span>
+      </button>
+      <button class="nav-item" data-section="historial">
+        <svg viewBox="0 0 24 24" class="nav-icon"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67V7z" fill="currentColor"/></svg>
+        <span>Historial</span>
+      </button>
+      <button class="nav-item" data-section="ajustes">
+        <svg viewBox="0 0 24 24" class="nav-icon"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 00.12-.61l-1.92-3.32a.49.49 0 00-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.48.48 0 00-.48-.41h-3.84a.48.48 0 00-.48.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96a.49.49 0 00-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58a.49.49 0 00-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.26.41.48.41h3.84c.24 0 .44-.17.48-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6A3.6 3.6 0 1115.6 12 3.6 3.6 0 0112 15.6z" fill="currentColor"/></svg>
+        <span>Ajustes</span>
+      </button>
+    </nav>
+    <div class="sidebar-footer">
+      <span class="sidebar-version">ARC v1.0</span>
+    </div>
+  </aside>
+
+  <main id="content" class="content">
+
+    <!-- ============================== -->
+    <!-- CALCULADORA SECTION -->
+    <!-- ============================== -->
+    <section id="section-calculadora" class="section active">
+      <div class="section-header">
+        <div class="header-left">
+          <button id="menuToggle" class="menu-btn" aria-label="Menú">
+            <svg viewBox="0 0 24 24" width="24" height="24"><path d="M3 6h18v2H3V6zm0 5h18v2H3v-2zm0 5h18v2H3v-2z" fill="currentColor"/></svg>
+          </button>
+          <h1 class="section-title">Calculadora</h1>
+        </div>
+        <div class="header-accent"></div>
+      </div>
+
+      <div class="calc-container">
+        <div class="calc-card glass">
+          <div class="calc-display" id="calcDisplay">0</div>
+          <div class="calc-formula" id="calcFormula">x · 1 ÷ 1</div>
+
+          <div class="calc-input-group">
+            <label class="input-label">Valor de x</label>
+            <input type="number" id="calcInput" class="calc-input" placeholder="Ingresa un valor" step="any" autofocus>
+          </div>
+
+          <div class="calc-params">
+            <div class="param-group">
+              <label class="input-label">Multiplicador</label>
+              <input type="number" id="multiplierInput" class="calc-input small" value="1" step="any">
+            </div>
+            <div class="param-group">
+              <label class="input-label">Divisor</label>
+              <input type="number" id="divisorInput" class="calc-input small" value="1" step="any">
+            </div>
+          </div>
+
+          <div class="preset-divisors">
+            <span class="preset-label">Divisores rápidos</span>
+            <div class="preset-grid">
+              <button class="preset-btn" data-value="8.5">8.5</button>
+              <button class="preset-btn" data-value="9.8">9.8</button>
+              <button class="preset-btn" data-value="7.2">7.2</button>
+              <button class="preset-btn" data-value="12">12</button>
+              <button class="preset-btn custom" data-value="custom">Personalizado</button>
+            </div>
+          </div>
+
+          <div class="rounding-section">
+            <span class="preset-label">Redondeo</span>
+            <div class="rounding-options">
+              <button class="rounding-btn" data-round="1">1 decimal</button>
+              <button class="rounding-btn active" data-round="2">2 decimales</button>
+              <button class="rounding-btn" data-round="0">Exacto</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="calc-result-card glass" id="resultCard">
+          <div class="result-label">Resultado</div>
+          <div class="result-value" id="resultValue">—</div>
+          <button class="copy-btn" id="copyResult" aria-label="Copiar resultado">
+            <svg viewBox="0 0 24 24" width="18" height="18"><path d="M16 1H4a2 2 0 00-2 2v14h2V3h12V1zm3 4H8a2 2 0 00-2 2v14a2 2 0 002 2h11a2 2 0 002-2V7a2 2 0 00-2-2zm0 16H8V7h11v14z" fill="currentColor"/></svg>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================== -->
+    <!-- FÓRMULAS SECTION -->
+    <!-- ============================== -->
+    <section id="section-formulas" class="section">
+      <div class="section-header">
+        <div class="header-left">
+          <button id="menuToggle2" class="menu-btn" aria-label="Menú">
+            <svg viewBox="0 0 24 24" width="24" height="24"><path d="M3 6h18v2H3V6zm0 5h18v2H3v-2zm0 5h18v2H3v-2z" fill="currentColor"/></svg>
+          </button>
+          <h1 class="section-title">Fórmulas</h1>
+        </div>
+      </div>
+
+      <div class="formulas-container">
+        <div class="formula-categories" id="formulaCategories">
+          <button class="category-btn active" data-category="arquitectura">Arquitectura</button>
+          <button class="category-btn" data-category="fisica">Física</button>
+          <button class="category-btn" data-category="matematica">Matemática</button>
+          <button class="category-btn" data-category="personalizadas">Personalizadas</button>
+        </div>
+
+        <div class="formula-list glass" id="formulaList">
+          <!-- populated by js -->
+        </div>
+
+        <button class="add-formula-btn" id="addFormulaBtn">
+          <svg viewBox="0 0 24 24" width="20" height="20"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" fill="currentColor"/></svg>
+          Nueva fórmula
+        </button>
+      </div>
+    </section>
+
+    <!-- ============================== -->
+    <!-- CIENTÍFICA SECTION -->
+    <!-- ============================== -->
+    <section id="section-cientifica" class="section">
+      <div class="section-header">
+        <div class="header-left">
+          <button class="menu-btn menu-toggle" aria-label="Menú">
+            <svg viewBox="0 0 24 24" width="24" height="24"><path d="M3 6h18v2H3V6zm0 5h18v2H3v-2zm0 5h18v2H3v-2z" fill="currentColor"/></svg>
+          </button>
+          <h1 class="section-title">Científica</h1>
+        </div>
+      </div>
+
+      <div class="sci-container">
+        <div class="sci-display glass">
+          <div class="sci-expression" id="sciExpression">0</div>
+          <div class="sci-result" id="sciResult">0</div>
+        </div>
+
+        <div class="sci-buttons">
+          <div class="sci-row">
+            <button class="sci-btn fn" data-action="sin">sin</button>
+            <button class="sci-btn fn" data-action="cos">cos</button>
+            <button class="sci-btn fn" data-action="tan">tan</button>
+            <button class="sci-btn fn" data-action="log">log</button>
+            <button class="sci-btn fn" data-action="ln">ln</button>
+          </div>
+          <div class="sci-row">
+            <button class="sci-btn fn" data-action="sqrt">√</button>
+            <button class="sci-btn fn" data-action="sqr">x²</button>
+            <button class="sci-btn fn" data-action="pow">xⁿ</button>
+            <button class="sci-btn fn" data-action="pi">π</button>
+            <button class="sci-btn fn" data-action="inv">1/x</button>
+          </div>
+          <div class="sci-row">
+            <button class="sci-btn" data-action="7">7</button>
+            <button class="sci-btn" data-action="8">8</button>
+            <button class="sci-btn" data-action="9">9</button>
+            <button class="sci-btn fn" data-action="g">g</button>
+            <button class="sci-btn fn" data-action="densidad">ρ</button>
+          </div>
+          <div class="sci-row">
+            <button class="sci-btn" data-action="4">4</button>
+            <button class="sci-btn" data-action="5">5</button>
+            <button class="sci-btn" data-action="6">6</button>
+            <button class="sci-btn op" data-action="*">×</button>
+            <button class="sci-btn op" data-action="/">÷</button>
+          </div>
+          <div class="sci-row">
+            <button class="sci-btn" data-action="1">1</button>
+            <button class="sci-btn" data-action="2">2</button>
+            <button class="sci-btn" data-action="3">3</button>
+            <button class="sci-btn op" data-action="+">+</button>
+            <button class="sci-btn op" data-action="-">−</button>
+          </div>
+          <div class="sci-row">
+            <button class="sci-btn" data-action="0">0</button>
+            <button class="sci-btn" data-action=".">.</button>
+            <button class="sci-btn fn" data-action="perc">%</button>
+            <button class="sci-btn fn" data-action="paren-left">(</button>
+            <button class="sci-btn fn" data-action="paren-right">)</button>
+          </div>
+          <div class="sci-row">
+            <button class="sci-btn clear" data-action="clear">C</button>
+            <button class="sci-btn clear" data-action="backspace">⌫</button>
+            <button class="sci-btn equals" data-action="calculate">=</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================== -->
+    <!-- GRÁFICOS SECTION -->
+    <!-- ============================== -->
+    <section id="section-graficos" class="section">
+      <div class="section-header">
+        <div class="header-left">
+          <button class="menu-btn menu-toggle" aria-label="Menú">
+            <svg viewBox="0 0 24 24" width="24" height="24"><path d="M3 6h18v2H3V6zm0 5h18v2H3v-2zm0 5h18v2H3v-2z" fill="currentColor"/></svg>
+          </button>
+          <h1 class="section-title">Gráficos</h1>
+        </div>
+      </div>
+
+      <div class="graph-container">
+        <div class="graph-input-group glass">
+          <label class="input-label">Ecuación</label>
+          <div class="graph-input-row">
+            <span class="graph-prefix">y =</span>
+            <input type="text" id="graphInput" class="graph-input" placeholder="ej: 2x + 3" value="2x + 3">
+            <button id="graphBtn" class="graph-btn">Graficar</button>
+          </div>
+          <div class="graph-presets">
+            <button class="graph-preset" data-eq="2x + 3">2x+3</button>
+            <button class="graph-preset" data-eq="x^2">x²</button>
+            <button class="graph-preset" data-eq="sin(x)">sin(x)</button>
+            <button class="graph-preset" data-eq="cos(x)">cos(x)</button>
+            <button class="graph-preset" data-eq="sqrt(x)">√x</button>
+          </div>
+        </div>
+        <div class="graph-canvas-wrapper glass">
+          <canvas id="graphCanvas"></canvas>
+          <div class="graph-controls">
+            <button id="graphReset" class="graph-control-btn" title="Restablecer vista">
+              <svg viewBox="0 0 24 24" width="18" height="18"><path d="M12 5V1L7 6l5 5V7a6 6 0 11-6 6H4a8 8 0 108-8z" fill="currentColor"/></svg>
+            </button>
+            <span class="graph-zoom-label" id="graphZoomLabel">100%</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================== -->
+    <!-- HISTORIAL SECTION -->
+    <!-- ============================== -->
+    <section id="section-historial" class="section">
+      <div class="section-header">
+        <div class="header-left">
+          <button class="menu-btn menu-toggle" aria-label="Menú">
+            <svg viewBox="0 0 24 24" width="24" height="24"><path d="M3 6h18v2H3V6zm0 5h18v2H3v-2zm0 5h18v2H3v-2z" fill="currentColor"/></svg>
+          </button>
+          <h1 class="section-title">Historial</h1>
+        </div>
+        <div class="header-actions">
+          <button id="copyAllHistory" class="header-action-btn" title="Copiar todo">
+            <svg viewBox="0 0 24 24" width="20" height="20"><path d="M16 1H4a2 2 0 00-2 2v14h2V3h12V1zm3 4H8a2 2 0 00-2 2v14a2 2 0 002 2h11a2 2 0 002-2V7a2 2 0 00-2-2zm0 16H8V7h11v14z" fill="currentColor"/></svg>
+          </button>
+          <button id="deleteAllHistory" class="header-action-btn delete" title="Eliminar todo">
+            <svg viewBox="0 0 24 24" width="20" height="20"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" fill="currentColor"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="history-container" id="historyContainer">
+        <div class="history-empty" id="historyEmpty">
+          <svg viewBox="0 0 24 24" width="48" height="48" opacity="0.3"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67V7z" fill="currentColor"/></svg>
+          <p>Sin cálculos aún</p>
+        </div>
+        <div class="history-list" id="historyList"></div>
+      </div>
+    </section>
+
+    <!-- ============================== -->
+    <!-- AJUSTES SECTION -->
+    <!-- ============================== -->
+    <section id="section-ajustes" class="section">
+      <div class="section-header">
+        <div class="header-left">
+          <button class="menu-btn menu-toggle" aria-label="Menú">
+            <svg viewBox="0 0 24 24" width="24" height="24"><path d="M3 6h18v2H3V6zm0 5h18v2H3v-2zm0 5h18v2H3v-2z" fill="currentColor"/></svg>
+          </button>
+          <h1 class="section-title">Ajustes</h1>
+        </div>
+      </div>
+
+      <div class="settings-container">
+        <div class="settings-group glass">
+          <h3 class="settings-group-title">Precisión</h3>
+          <div class="setting-item">
+            <span class="setting-label">Decimales por defecto</span>
+            <select id="settingDecimals" class="setting-select">
+              <option value="0">Exacto</option>
+              <option value="1">1 decimal</option>
+              <option value="2" selected>2 decimales</option>
+              <option value="3">3 decimales</option>
+              <option value="4">4 decimales</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="settings-group glass">
+          <h3 class="settings-group-title">Apariencia</h3>
+          <div class="setting-item">
+            <span class="setting-label">Animaciones</span>
+            <label class="toggle">
+              <input type="checkbox" id="settingAnimations" checked>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <div class="setting-item">
+            <span class="setting-label">Color de acento</span>
+            <div class="color-options">
+              <button class="color-btn active" data-color="blue" style="background:#42a5f5"></button>
+              <button class="color-btn" data-color="purple" style="background:#ab47bc"></button>
+              <button class="color-btn" data-color="green" style="background:#66bb6a"></button>
+              <button class="color-btn" data-color="orange" style="background:#ffa726"></button>
+              <button class="color-btn" data-color="red" style="background:#ef5350"></button>
+              <button class="color-btn" data-color="teal" style="background:#26a69a"></button>
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-group glass">
+          <h3 class="settings-group-title">Datos</h3>
+          <div class="setting-item">
+            <span class="setting-label">Exportar fórmulas</span>
+            <button id="exportFormulas" class="setting-btn">Exportar</button>
+          </div>
+          <div class="setting-item">
+            <span class="setting-label">Importar fórmulas</span>
+            <button id="importFormulas" class="setting-btn">Importar</button>
+            <input type="file" id="importFile" accept=".json" hidden>
+          </div>
+          <div class="setting-item">
+            <span class="setting-label">Borrar todos los datos</span>
+            <button id="clearAllData" class="setting-btn danger">Borrar todo</button>
+          </div>
+        </div>
+
+        <div class="settings-group glass">
+          <h3 class="settings-group-title">Acerca de</h3>
+          <div class="setting-item">
+            <span class="setting-label">Versión</span>
+            <span class="setting-value">1.0.0</span>
+          </div>
+          <div class="setting-item">
+            <span class="setting-label">Desarrollado para</span>
+            <span class="setting-value">Arquitectura e Ingeniería</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ============================== -->
+  <!-- BOTTOM NAVIGATION (MOBILE) -->
+  <!-- ============================== -->
+  <nav id="bottomNav" class="bottom-nav">
+    <button class="bottom-nav-item active" data-section="calculadora">
+      <svg viewBox="0 0 24 24" class="bnav-icon"><path d="M7 2h10a3 3 0 013 3v14a3 3 0 01-3 3H7a3 3 0 01-3-3V5a3 3 0 013-3zm0 2a1 1 0 00-1 1v14a1 1 0 001 1h10a1 1 0 001-1V5a1 1 0 00-1-1H7zM9 6h6v2H9V6zm0 4h6v2H9v-2zm0 4h4v2H9v-2z" fill="currentColor"/></svg>
+      <span>Calcular</span>
+    </button>
+    <button class="bottom-nav-item" data-section="formulas">
+      <svg viewBox="0 0 24 24" class="bnav-icon"><path d="M4 6a2 2 0 012-2h12a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V6zm2 0v12h12V6H6zm3 2h6v2H9V8zm0 4h6v2H9v-2zm0 4h4v2H9v-2z" fill="currentColor"/></svg>
+      <span>Fórmulas</span>
+    </button>
+    <button class="bottom-nav-item" data-section="cientifica">
+      <svg viewBox="0 0 24 24" class="bnav-icon"><path d="M12 2a10 10 0 0110 10c0 3.37-1.66 6.34-4.22 8.22l-1.42-1.42A7.98 7.98 0 0020 12 8 8 0 104 12c0 2.19.88 4.17 2.3 5.62L4.88 19A9.96 9.96 0 012 12 10 10 0 0112 2zm0 4a6 6 0 016 6c0 1.97-.95 3.73-2.43 4.84l-1.42-1.42A3.99 3.99 0 0016 12a4 4 0 10-6.15 3.42l-1.42 1.42A5.98 5.98 0 016 12a6 6 0 016-6zm0 4a2 2 0 110 4 2 2 0 010-4z" fill="currentColor"/></svg>
+      <span>Ciencia</span>
+    </button>
+    <button class="bottom-nav-item" data-section="graficos">
+      <svg viewBox="0 0 24 24" class="bnav-icon"><path d="M3 3v18h18v-2H5V3H3zm4 4v10h2V7H7zm4 3v7h2v-7h-2zm4-3v10h2V7h-2z" fill="currentColor"/></svg>
+      <span>Gráficos</span>
+    </button>
+    <button class="bottom-nav-item" data-section="historial">
+      <svg viewBox="0 0 24 24" class="bnav-icon"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67V7z" fill="currentColor"/></svg>
+      <span>Historial</span>
+    </button>
+    <button class="bottom-nav-item" data-section="ajustes">
+      <svg viewBox="0 0 24 24" class="bnav-icon"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 00.12-.61l-1.92-3.32a.49.49 0 00-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.48.48 0 00-.48-.41h-3.84a.48.48 0 00-.48.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96a.49.49 0 00-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58a.49.49 0 00-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.26.41.48.41h3.84c.24 0 .44-.17.48-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6A3.6 3.6 0 1115.6 12 3.6 3.6 0 0112 15.6z" fill="currentColor"/></svg>
+      <span>Ajustes</span>
+    </button>
+  </nav>
+</div>
+
+<!-- Modal for adding formulas -->
+<div id="formulaModal" class="modal-overlay">
+  <div class="modal-content glass">
+    <div class="modal-header">
+      <h2 class="modal-title">Nueva fórmula</h2>
+      <button class="modal-close" id="modalClose">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-field">
+        <label class="input-label">Nombre</label>
+        <input type="text" id="formulaName" class="calc-input" placeholder="ej: Escala 1:100">
+      </div>
+      <div class="modal-field">
+        <label class="input-label">Categoría</label>
+        <select id="formulaCategory" class="setting-select">
+          <option value="arquitectura">Arquitectura</option>
+          <option value="fisica">Física</option>
+          <option value="matematica">Matemática</option>
+          <option value="personalizadas">Personalizadas</option>
+        </select>
+      </div>
+      <div class="modal-field">
+        <label class="input-label">Fórmula (usa x como variable)</label>
+        <input type="text" id="formulaExpression" class="calc-input" placeholder="ej: (x * 100) / 1">
+      </div>
+      <div class="modal-field">
+        <label class="input-label">Descripción (opcional)</label>
+        <input type="text" id="formulaDesc" class="calc-input" placeholder="Descripción breve">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="modal-btn cancel" id="modalCancel">Cancelar</button>
+      <button class="modal-btn save" id="modalSave">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/app.js"></script>
+</body>
+</html>
