@@ -231,7 +231,6 @@
     }
     state.scaleHistory.unshift(entry)
     if (state.scaleHistory.length > 200) state.scaleHistory.length = 200
-    linkToActiveProject('scale', entry)
     persistState()
   }
 
@@ -387,7 +386,6 @@
     }
     state.formulaHistory.unshift(entry)
     if (state.formulaHistory.length > 200) state.formulaHistory.length = 200
-    linkToActiveProject('formula', entry)
     persistState()
   }
 
@@ -611,7 +609,6 @@
     }
     state.sciHistory.unshift(entry)
     if (state.sciHistory.length > 200) state.sciHistory.length = 200
-    linkToActiveProject('sci', entry)
     persistState()
   }
 
@@ -905,23 +902,6 @@
   }
 
   // ============================
-  // LINK CALCULATION TO ACTIVE PROJECT
-  // ============================
-  function linkToActiveProject (type, data) {
-    if (!state.activeProjectId || !Array.isArray(state.projects)) return
-    var p = state.projects.find(function(p) { return p.id === state.activeProjectId; })
-    if (!p) return
-    if (!p.calculations) p.calculations = []
-    p.calculations.unshift({
-      type: type,
-      result: data.result || '',
-      formula: data.formula || data.expr || '',
-      date: new Date().toISOString()
-    })
-    if (p.calculations.length > 200) p.calculations.length = 200
-  }
-
-  // ============================
   // DRAW MINI GRAPH (DASHBOARD)
   // ============================
   function drawMiniGraph () {
@@ -979,21 +959,6 @@
       ctx.stroke()
       ctx.restore()
     } catch (e) {}
-  }
-
-  // ============================
-  // LOADING OVERLAY
-  // ============================
-  function showLoading (text) {
-    var overlay = document.getElementById('loadingOverlay')
-    var textEl = document.getElementById('loadingText')
-    if (overlay) overlay.style.display = 'flex'
-    if (textEl) textEl.textContent = text || 'Cargando...'
-  }
-
-  function hideLoading () {
-    var overlay = document.getElementById('loadingOverlay')
-    if (overlay) overlay.style.display = 'none'
   }
 
   // ============================
@@ -1070,14 +1035,6 @@
       if (input) input.addEventListener('keydown', onKeydown)
       modal.classList.add('open')
     })
-  }
-
-  function showPrompt (title, opts) {
-    opts = opts || {}
-    opts.inputLabel = opts.label || ''
-    opts.value = opts.value || ''
-    opts.placeholder = opts.placeholder || ''
-    return showActionModal(title, opts)
   }
 
   function showConfirm (title, message) {
@@ -1871,29 +1828,4 @@
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init)
   else init()
-
-  // ARC exposed API for Phase 2 — allows overriding internal functions
-  window.__arc = {
-    state: state,
-    init: function() { return init(); },
-    _origInit: init,
-    setInit: function(fn) { init = fn; },
-    navigateTo: function(s) { return navigateTo(s); },
-    _origNavigateTo: navigateTo,
-    setNavigateTo: function(fn) { navigateTo = fn; },
-    loadState: function() { return loadState(); },
-    _origLoadState: loadState,
-    setLoadState: function(fn) { loadState = fn; },
-    persistState: function() { return persistState(); },
-    _origPersistState: persistState,
-    setPersistState: function(fn) { persistState = fn; },
-    showToast: showToast,
-    renderHistory: renderHistory,
-    renderFormulas: renderFormulas,
-    showActionModal: showActionModal,
-    showPrompt: showPrompt,
-    showConfirm: showConfirm,
-    showLoading: showLoading,
-    hideLoading: hideLoading
-  };
 })()
