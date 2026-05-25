@@ -172,7 +172,7 @@ npm run dev
 * PWA support
 * Apple-inspired UI
 
-## ARC v1.1
+## ARC v3.5
 
 * Smart Formula System
 * Dynamic variable engine
@@ -228,5 +228,5 @@ ARC is actively evolving as a modern technical utility platform focused on archi
 ---
 
 <p align="center">
-  Designed by <b>Maxsi</b>
+  Designed by <b>Maxsy</b>
 </p>
