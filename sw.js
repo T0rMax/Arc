@@ -1,14 +1,15 @@
 /* ============================================
-   ARC Service Worker — v2.0.0
+   ARC Service Worker — v3.0.0
    Cache-first for assets, network-first for API
    ============================================ */
 
-const CACHE_NAME = 'arc-cache-v2'
+const CACHE_NAME = 'arc-cache-v3'
 const STATIC_ASSETS = [
   '/',
   '/index.html',
   '/css/style.css',
   '/js/app.js',
+  '/js/phase2.js',
   '/manifest.json',
   '/icons/icon-192.svg',
   '/icons/icon-512.svg',
@@ -146,7 +147,7 @@ self.addEventListener('message', (e) => {
 // ============================
 // VERSION
 // ============================
-const APP_VERSION = '2.0.0'
+const APP_VERSION = '3.0.0'
 self.addEventListener('install', () => {
   self.clients.matchAll().then((clients) =>
     clients.forEach((client) => client.postMessage({ type: 'SW_VERSION', version: APP_VERSION }))

@@ -8,6 +8,7 @@
     currentSection: 'dashboard',
     calcMultiplier: 1,
     calcDivisor: 1,
+    favFilterActive: false,
     rounding: 2,
     animations: true,
     accentColor: 'blue',
@@ -18,7 +19,7 @@
     categories: ['arquitectura', 'fisica', 'matematica', 'personalizadas'],
     currentFormulaCategory: 'arquitectura',
     pinnedFormulas: [],
-    version: '2.0.0'
+    version: '3.0.0'
   }
 
   const accentMap = {
@@ -143,7 +144,7 @@
 
     // Recent calcs (from all histories)
     const recentList = document.getElementById('dashRecentList')
-    const recent = allHistory.sort((a, b) => b.id - a.id).slice(0, 5)
+    const recent = allHistory.slice().sort((a, b) => b.id - a.id).slice(0, 5)
     if (recent.length === 0) {
       recentList.innerHTML = '<div class="dash-empty"><p>Aún no hay cálculos</p></div>'
     } else {
@@ -212,14 +213,16 @@
     const now = new Date()
     const timeStr = now.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })
     const dateStr = now.toLocaleDateString('es-ES')
-    state.scaleHistory.unshift({
+    const entry = {
       id: Date.now(),
       type: 'escalas',
       x, mult, div, result,
       time: timeStr, date: dateStr,
       formula: `(${x} × ${mult}) ÷ ${div} = ${result}`
-    })
+    }
+    state.scaleHistory.unshift(entry)
     if (state.scaleHistory.length > 200) state.scaleHistory.length = 200
+    linkToActiveProject('scale', entry)
     persistState()
   }
 
@@ -288,7 +291,7 @@
       }
     }
 
-    if (!/^[\d\s+\-*/().%]+$/.test(sanitized)) return null
+    if (!/^[\d\s+\-*/().,%a-zA-Z]+$/.test(sanitized)) return null
     let open = (sanitized.match(/\(/g) || []).length
     let close = (sanitized.match(/\)/g) || []).length
     while (close < open) { sanitized += ')'; close++ }
@@ -366,14 +369,16 @@
     const dateStr = now.toLocaleDateString('es-ES')
     const valsStr = Object.entries(varValues).filter(([_, v]) => v !== '' && v !== '0')
       .map(([k, v]) => `${k}=${v}`).join(', ')
-    state.formulaHistory.unshift({
+    const entry = {
       id: Date.now(),
       type: 'formulas',
       expr, varValues, result,
       time: timeStr, date: dateStr,
       formula: `y = ${expr}  →  ${valsStr ? valsStr + '  →  ' : ''}${result}`
-    })
+    }
+    state.formulaHistory.unshift(entry)
     if (state.formulaHistory.length > 200) state.formulaHistory.length = 200
+    linkToActiveProject('formula', entry)
     persistState()
   }
 
@@ -587,14 +592,16 @@
     const now = new Date()
     const timeStr = now.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })
     const dateStr = now.toLocaleDateString('es-ES')
-    state.sciHistory.unshift({
+    const entry = {
       id: Date.now(),
       type: 'cientifica',
       expr, result,
       time: timeStr, date: dateStr,
       formula: `${rawToDisplay(expr)} = ${result}`
-    })
+    }
+    state.sciHistory.unshift(entry)
     if (state.sciHistory.length > 200) state.sciHistory.length = 200
+    linkToActiveProject('sci', entry)
     persistState()
   }
 
@@ -777,9 +784,14 @@
           </div>
           <div class="history-item-formula">${item.formula}</div>
         </div>
-        <button class="history-item-copy" data-id="${item.id}" data-type="${currentHistoryType}" title="Copiar">
-          <svg viewBox="0 0 24 24" width="16" height="16"><path d="M16 1H4a2 2 0 00-2 2v14h2V3h12V1zm3 4H8a2 2 0 00-2 2v14a2 2 0 002 2h11a2 2 0 002-2V7a2 2 0 00-2-2zm0 16H8V7h11v14z" fill="currentColor"/></svg>
-        </button>
+        <div class="history-item-actions">
+          <button class="history-item-copy" data-id="${item.id}" data-type="${currentHistoryType}" title="Copiar">
+            <svg viewBox="0 0 24 24" width="16" height="16"><path d="M16 1H4a2 2 0 00-2 2v14h2V3h12V1zm3 4H8a2 2 0 00-2 2v14a2 2 0 002 2h11a2 2 0 002-2V7a2 2 0 00-2-2zm0 16H8V7h11v14z" fill="currentColor"/></svg>
+          </button>
+          <button class="history-item-delete" data-id="${item.id}" data-type="${currentHistoryType}" title="Eliminar">
+            <svg viewBox="0 0 24 24" width="16" height="16"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" fill="currentColor"/></svg>
+          </button>
+        </div>
       </div>`
     }).join('')
   }
@@ -883,6 +895,18 @@
   }
 
   // ============================
+  // LINK CALCULATION TO ACTIVE PROJECT
+  // ============================
+  function linkToActiveProject (type, data) {
+    if (!state.activeProjectId || !Array.isArray(state.projects)) return
+    var p = state.projects.find(function(p) { return p.id === state.activeProjectId; })
+    if (!p) return
+    if (!p.calculations) p.calculations = []
+    p.calculations.unshift({ type: type, data: data, date: new Date().toISOString() })
+    if (p.calculations.length > 200) p.calculations.length = 200
+  }
+
+  // ============================
   // DRAW MINI GRAPH (DASHBOARD)
   // ============================
   function drawMiniGraph () {
@@ -919,7 +943,7 @@
 
     const accent = accentMap[state.accentColor] || '#42a5f5'
     try {
-      const compiled = new Function('x', '"use strict"; return 2 * x + 3')
+      const compiled = new Function('x', '"use strict"; return ' + (graphState.expr ? parseExpression(graphState.expr) : '2*x+3'))
       ctx.save()
       ctx.strokeStyle = accent
       ctx.lineWidth = 2
@@ -940,6 +964,109 @@
       ctx.stroke()
       ctx.restore()
     } catch (e) {}
+  }
+
+  // ============================
+  // LOADING OVERLAY
+  // ============================
+  function showLoading (text) {
+    var overlay = document.getElementById('loadingOverlay')
+    var textEl = document.getElementById('loadingText')
+    if (overlay) overlay.style.display = 'flex'
+    if (textEl) textEl.textContent = text || 'Cargando...'
+  }
+
+  function hideLoading () {
+    var overlay = document.getElementById('loadingOverlay')
+    if (overlay) overlay.style.display = 'none'
+  }
+
+  // ============================
+  // ACTION MODAL (Prompt / Confirm)
+  // ============================
+  function showActionModal (title, opts) {
+    return new Promise(function (resolve) {
+      var modal = document.getElementById('actionModal')
+      var titleEl = document.getElementById('actionModalTitle')
+      var msgEl = document.getElementById('actionModalMessage')
+      var inputWrap = document.getElementById('actionModalInputWrap')
+      var inputLabel = document.getElementById('actionModalInputLabel')
+      var input = document.getElementById('actionModalInput')
+      var confirmBtn = document.getElementById('actionModalConfirm')
+      var cancelBtn = document.getElementById('actionModalCancel')
+      var closeBtn = document.getElementById('actionModalClose')
+      if (!modal || !titleEl || !confirmBtn || !cancelBtn) { resolve(null); return }
+
+      titleEl.textContent = title || 'Acción'
+
+      if (opts && opts.message) {
+        msgEl.style.display = 'block'
+        msgEl.textContent = opts.message
+      } else {
+        msgEl.style.display = 'none'
+      }
+
+      var isPrompt = opts && opts.inputLabel !== undefined
+      if (isPrompt) {
+        inputWrap.style.display = 'block'
+        inputLabel.textContent = opts.inputLabel || ''
+        input.value = opts.value || ''
+        input.placeholder = opts.placeholder || ''
+        setTimeout(function () { input.focus(); input.select() }, 100)
+      } else {
+        inputWrap.style.display = 'none'
+      }
+
+      confirmBtn.textContent = (opts && opts.confirmText) || 'Aceptar'
+      cancelBtn.textContent = (opts && opts.cancelText) || 'Cancelar'
+
+      function onKeydown (e) {
+        if (e.key === 'Enter' && isPrompt) { e.preventDefault(); onConfirm() }
+        if (e.key === 'Escape') { onCancel() }
+      }
+
+      function onOverlay (e) {
+        if (e.target === modal) onCancel()
+      }
+
+      function cleanup () {
+        modal.classList.remove('open')
+        modal.removeEventListener('click', onOverlay)
+        confirmBtn.removeEventListener('click', onConfirm)
+        cancelBtn.removeEventListener('click', onCancel)
+        closeBtn.removeEventListener('click', onCancel)
+        if (input) input.removeEventListener('keydown', onKeydown)
+      }
+
+      function onConfirm () {
+        cleanup()
+        resolve(isPrompt ? input.value : true)
+      }
+
+      function onCancel () {
+        cleanup()
+        resolve(isPrompt ? null : false)
+      }
+
+      modal.addEventListener('click', onOverlay)
+      confirmBtn.addEventListener('click', onConfirm)
+      cancelBtn.addEventListener('click', onCancel)
+      closeBtn.addEventListener('click', onCancel)
+      if (input) input.addEventListener('keydown', onKeydown)
+      modal.classList.add('open')
+    })
+  }
+
+  function showPrompt (title, opts) {
+    opts = opts || {}
+    opts.inputLabel = opts.label || ''
+    opts.value = opts.value || ''
+    opts.placeholder = opts.placeholder || ''
+    return showActionModal(title, opts)
+  }
+
+  function showConfirm (title, message) {
+    return showActionModal(title, { message: message || '' })
   }
 
   // ============================
@@ -983,7 +1110,7 @@
       if (e.key === 'Escape' && cmdOpen) { closeCmd(); return }
       if (e.key === 'Escape') {
         const modal = document.getElementById('formulaModal')
-        if (modal.classList.contains('open')) modal.classList.remove('open')
+        if (modal && modal.classList.contains('open')) modal.classList.remove('open')
       }
     })
 
@@ -1090,19 +1217,18 @@
     })
 
     // Fav filter toggle
-    let favFilterActive = false
+    document.getElementById('favFilterToggle')?.classList.toggle('active', !!state.favFilterActive)
     document.getElementById('favFilterToggle')?.addEventListener('click', () => {
-      favFilterActive = !favFilterActive
-      document.getElementById('favFilterToggle').classList.toggle('active', favFilterActive)
+      state.favFilterActive = !state.favFilterActive
+      document.getElementById('favFilterToggle').classList.toggle('active', !!state.favFilterActive)
       const cat = state.currentFormulaCategory
-      if (favFilterActive) {
+      if (state.favFilterActive) {
         const container = document.getElementById('formulaList')
         const filtered = state.formulas.filter(f => f.category === cat && state.pinnedFormulas.includes(f.id))
         if (filtered.length === 0) {
           container.innerHTML = '<div class="formula-empty"><svg viewBox="0 0 24 24" width="36" height="36" opacity="0.3"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" fill="currentColor"/></svg><p>Sin fórmulas favoritas</p></div>'
         } else {
           container.innerHTML = filtered.map(f => {
-            const pinned = true
             return `<div class="formula-item">
               <div class="formula-item-header">
                 <span class="formula-item-name">${f.name}</span>
@@ -1126,7 +1252,8 @@
       } else {
         renderFormulas(document.getElementById('formulaSearchInput').value)
       }
-      showToast(favFilterActive ? 'Mostrando solo favoritas' : 'Mostrando todas')
+      persistState()
+      showToast(state.favFilterActive ? 'Mostrando solo favoritas' : 'Mostrando todas')
     })
 
     document.getElementById('formulaList')?.addEventListener('click', (e) => {
@@ -1170,7 +1297,19 @@
       const expr = document.getElementById('formulaExpression').value.trim()
       const desc = document.getElementById('formulaDesc').value.trim()
       const cat = document.getElementById('formulaCategory').value
-      if (!name || !expr) { showToast('Nombre y fórmula requeridos'); return }
+      if (!name) { showToast('El nombre es requerido'); return }
+      if (!expr) { showToast('La expresión es requerida'); return }
+
+      // Validate expression is parseable
+      const vars = detectVariables(expr)
+      const testValues = {}
+      vars.forEach(function(v) { testValues[v] = 1 })
+      const testResult = evalFormulaExpr(expr, testValues)
+      if (testResult === null || !isFinite(testResult)) {
+        showToast('La expresión no es válida. Revisa la sintaxis.')
+        return
+      }
+
       state.formulas.push({ id: Date.now() + Math.random(), name, expr, desc, category: cat })
       persistState(); renderFormulas()
       document.getElementById('formulaModal').classList.remove('open')
@@ -1339,19 +1478,38 @@
     document.getElementById('deleteAllHistory')?.addEventListener('click', () => {
       const items = getHistoryByType(currentHistoryType)
       if (items.length === 0) { showToast('Sin historial'); return }
-      const type = currentHistoryType
-      if (type === 'escalas') state.scaleHistory = []
-      else if (type === 'formulas') state.formulaHistory = []
-      else if (type === 'cientifica') state.sciHistory = []
-      persistState(); renderHistory(); showToast('Historial eliminado')
+      showConfirm('Eliminar historial', '¿Eliminar todo el historial de ' + currentHistoryType + '? Esta acción no se puede deshacer.').then(function(confirmed) {
+        if (!confirmed) return
+        const type = currentHistoryType
+        if (type === 'escalas') state.scaleHistory = []
+        else if (type === 'formulas') state.formulaHistory = []
+        else if (type === 'cientifica') state.sciHistory = []
+        else if (type === 'proyectos') { state.scaleHistory = []; state.formulaHistory = []; state.sciHistory = [] }
+        persistState(); renderHistory(); showToast('Historial eliminado')
+      })
     })
 
     document.getElementById('historyGrouped')?.addEventListener('click', (e) => {
-      const btn = e.target.closest('.history-item-copy')
-      if (btn) {
-        const items = getHistoryByType(btn.dataset.type)
-        const item = items.find(h => h.id === parseInt(btn.dataset.id))
+      const copyBtn = e.target.closest('.history-item-copy')
+      if (copyBtn) {
+        const items = getHistoryByType(copyBtn.dataset.type)
+        const item = items.find(h => h.id === parseFloat(copyBtn.dataset.id))
         if (item) navigator.clipboard.writeText(item.formula).then(() => showToast('Copiado'))
+        return
+      }
+      const delBtn = e.target.closest('.history-item-delete')
+      if (delBtn) {
+        const type = delBtn.dataset.type
+        const id = parseFloat(delBtn.dataset.id)
+        let arr = getHistoryByType(type)
+        const idx = arr.findIndex(h => h.id === id)
+        if (idx !== -1) {
+          arr.splice(idx, 1)
+          persistState()
+          const searchVal = document.getElementById('historySearchInput')?.value || ''
+          renderHistory(searchVal)
+          showToast('Elemento eliminado')
+        }
       }
     })
 
@@ -1378,12 +1536,13 @@
     })
 
     document.getElementById('clearAllData')?.addEventListener('click', () => {
-      if (confirm('¿Borrar todos los datos? Esta acción no se puede deshacer.')) {
+      showConfirm('Borrar todos los datos', '¿Borrar todos los datos? Esta acción no se puede deshacer.').then(function(confirmed) {
+        if (!confirmed) return
         state.scaleHistory = []; state.formulaHistory = []; state.sciHistory = []
         state.formulas = []; state.pinnedFormulas = []
         persistState(); renderHistory(); initFormulas(); updateDashboard()
         showToast('Todos los datos eliminados')
-      }
+      })
     })
 
     document.getElementById('exportFormulas')?.addEventListener('click', () => {
@@ -1611,7 +1770,7 @@
     updateOnlineStatus()
 
     // ===== APP VERSION =====
-    document.getElementById('appVersionValue').textContent = state.version || '2.0.0'
+    document.getElementById('appVersionValue').textContent = state.version || '3.0.0'
 
     // ===== CLEAR CACHE =====
     document.getElementById('clearCacheBtn')?.addEventListener('click', () => {
@@ -1648,6 +1807,17 @@
     navigateTo(state.currentSection)
     switchHistoryTab('escalas')
     initFormulas()
+    if (state.favFilterActive) {
+      document.getElementById('favFilterToggle')?.classList.add('active')
+      var cat = state.currentFormulaCategory
+      var filtered = state.formulas.filter(function(f) { return f.category === cat && state.pinnedFormulas.includes(f.id); })
+      if (filtered.length === 0) {
+        var container = document.getElementById('formulaList')
+        if (container) container.innerHTML = '<div class="formula-empty"><svg viewBox="0 0 24 24" width="36" height="36" opacity="0.3"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" fill="currentColor"/></svg><p>Sin fórmulas favoritas</p></div>'
+      } else {
+        renderFormulas(document.getElementById('formulaSearchInput') ? document.getElementById('formulaSearchInput').value : '')
+      }
+    }
     calculateScale()
 
     requestAnimationFrame(() => {
@@ -1687,4 +1857,28 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init)
   else init()
 
+  // ARC exposed API for Phase 2 — allows overriding internal functions
+  window.__arc = {
+    state: state,
+    init: function() { return init(); },
+    _origInit: init,
+    setInit: function(fn) { init = fn; },
+    navigateTo: function(s) { return navigateTo(s); },
+    _origNavigateTo: navigateTo,
+    setNavigateTo: function(fn) { navigateTo = fn; },
+    loadState: function() { return loadState(); },
+    _origLoadState: loadState,
+    setLoadState: function(fn) { loadState = fn; },
+    persistState: function() { return persistState(); },
+    _origPersistState: persistState,
+    setPersistState: function(fn) { persistState = fn; },
+    showToast: showToast,
+    renderHistory: renderHistory,
+    renderFormulas: renderFormulas,
+    showActionModal: showActionModal,
+    showPrompt: showPrompt,
+    showConfirm: showConfirm,
+    showLoading: showLoading,
+    hideLoading: hideLoading
+  };
 })()
