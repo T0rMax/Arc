@@ -566,7 +566,7 @@
   function animateResult (el) {
     el.style.transform = 'scale(1.08)'
     el.style.transition = 'none'
-    el.getBoundingClientRect()
+    el.offsetHeight
     requestAnimationFrame(() => {
       el.style.transition = 'transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1)'
       el.style.transform = 'scale(1)'
@@ -576,7 +576,7 @@
   function animatePop (el) {
     el.style.transform = 'scale(0.95)'
     el.style.transition = 'none'
-    el.getBoundingClientRect()
+    el.offsetHeight
     requestAnimationFrame(() => {
       el.style.transition = 'transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)'
       el.style.transform = 'scale(1)'
@@ -615,9 +615,10 @@
   // GRAPHING
   // ============================
   let graphState = { xMin: -10, xMax: 10, yMin: -10, yMax: 10, expr: '2*x+3', zoom: 1 }
-  let isDragging = false
-  let dragStartX = 0, dragStartY = 0
-  let gsXMin, gsXMax, gsYMin, gsYMax
+    let isDragging = false
+    let dragStartX = 0, dragStartY = 0
+    let gsXMin, gsXMax, gsYMin, gsYMax
+    let dragRAF = null
 
   function parseExpression (input) {
     let s = input.trim()
@@ -657,10 +658,7 @@
     const xToPixel = x => pad + ((x - xMin) / (xMax - xMin)) * plotW
     const yToPixel = y => pad + ((yMax - y) / (yMax - yMin)) * plotH
 
-    const gradient = ctx.createRadialGradient(w/2, h/2, 0, w/2, h/2, w/2)
-    gradient.addColorStop(0, '#0d0d0d')
-    gradient.addColorStop(1, '#070707')
-    ctx.fillStyle = gradient
+    ctx.fillStyle = '#080808'
     ctx.fillRect(0, 0, w, h)
 
     ctx.strokeStyle = 'rgba(255,255,255,0.04)'
@@ -701,7 +699,7 @@
       const compiled = new Function('x', '"use strict"; return ' + parseExpression(expr))
       const accent = accentMap[state.accentColor] || '#42a5f5'
 
-      const steps = Math.max(300, Math.floor(plotW * 2.5))
+      const steps = Math.max(200, Math.floor(plotW * 1.5))
       const points = []
       for (let i = 0; i <= steps; i++) {
         const x = xMin + (i / steps) * (xMax - xMin)
@@ -712,21 +710,16 @@
           } else if (points.length > 1) {
             ctx.save()
             ctx.strokeStyle = accent
-            ctx.lineWidth = 5
-            ctx.shadowColor = accent
-            ctx.shadowBlur = 24
-            ctx.globalAlpha = 0.3
+            ctx.lineWidth = 6
+            ctx.globalAlpha = 0.15
             ctx.beginPath()
             ctx.moveTo(points[0].x, points[0].y)
             for (let j = 1; j < points.length; j++) ctx.lineTo(points[j].x, points[j].y)
             ctx.stroke()
-            ctx.restore()
 
-            ctx.save()
             ctx.strokeStyle = accent
             ctx.lineWidth = 2.5
-            ctx.shadowColor = accent
-            ctx.shadowBlur = 6
+            ctx.globalAlpha = 1
             ctx.beginPath()
             ctx.moveTo(points[0].x, points[0].y)
             for (let j = 1; j < points.length; j++) ctx.lineTo(points[j].x, points[j].y)
@@ -739,21 +732,16 @@
       if (points.length > 1) {
         ctx.save()
         ctx.strokeStyle = accent
-        ctx.lineWidth = 5
-        ctx.shadowColor = accent
-        ctx.shadowBlur = 24
-        ctx.globalAlpha = 0.3
+        ctx.lineWidth = 6
+        ctx.globalAlpha = 0.15
         ctx.beginPath()
         ctx.moveTo(points[0].x, points[0].y)
         for (let j = 1; j < points.length; j++) ctx.lineTo(points[j].x, points[j].y)
         ctx.stroke()
-        ctx.restore()
 
-        ctx.save()
         ctx.strokeStyle = accent
         ctx.lineWidth = 2.5
-        ctx.shadowColor = accent
-        ctx.shadowBlur = 6
+        ctx.globalAlpha = 1
         ctx.beginPath()
         ctx.moveTo(points[0].x, points[0].y)
         for (let j = 1; j < points.length; j++) ctx.lineTo(points[j].x, points[j].y)
@@ -957,7 +945,7 @@
     const accent = accentMap[state.accentColor] || '#42a5f5'
     try {
       const compiled = new Function('x', '"use strict"; return ' + (graphState.expr ? parseExpression(graphState.expr) : '2*x+3'))
-      const steps = 200
+      const steps = 120
       const points = []
       for (let i = 0; i <= steps; i++) {
         const x = xMin + (i / steps) * (xMax - xMin)
@@ -967,10 +955,16 @@
         } else if (points.length > 1) {
           ctx.save()
           ctx.strokeStyle = accent
-          ctx.lineWidth = 3
-          ctx.shadowColor = accent
-          ctx.shadowBlur = 10
-          ctx.globalAlpha = 0.4
+          ctx.lineWidth = 4
+          ctx.globalAlpha = 0.2
+          ctx.beginPath()
+          ctx.moveTo(points[0].x, points[0].y)
+          for (let j = 1; j < points.length; j++) ctx.lineTo(points[j].x, points[j].y)
+          ctx.stroke()
+
+          ctx.strokeStyle = accent
+          ctx.lineWidth = 1.5
+          ctx.globalAlpha = 0.8
           ctx.beginPath()
           ctx.moveTo(points[0].x, points[0].y)
           for (let j = 1; j < points.length; j++) ctx.lineTo(points[j].x, points[j].y)
@@ -982,21 +976,15 @@
       if (points.length > 1) {
         ctx.save()
         ctx.strokeStyle = accent
-        ctx.lineWidth = 3
-        ctx.shadowColor = accent
-        ctx.shadowBlur = 10
-        ctx.globalAlpha = 0.4
+        ctx.lineWidth = 4
+        ctx.globalAlpha = 0.2
         ctx.beginPath()
         ctx.moveTo(points[0].x, points[0].y)
         for (let j = 1; j < points.length; j++) ctx.lineTo(points[j].x, points[j].y)
         ctx.stroke()
-        ctx.restore()
 
-        ctx.save()
         ctx.strokeStyle = accent
         ctx.lineWidth = 1.5
-        ctx.shadowColor = 'transparent'
-        ctx.shadowBlur = 0
         ctx.globalAlpha = 0.8
         ctx.beginPath()
         ctx.moveTo(points[0].x, points[0].y)
@@ -1375,6 +1363,7 @@
 
     const canvas = document.getElementById('graphCanvas')
 
+    let wheelRAF = null
     canvas.addEventListener('wheel', (e) => {
       e.preventDefault()
       const delta = e.deltaY > 0 ? 1.1 : 0.9
@@ -1385,7 +1374,12 @@
       graphState.xMin = cx - rx * delta; graphState.xMax = cx + rx * delta
       graphState.yMin = cy - ry * delta; graphState.yMax = cy + ry * delta
       graphState.zoom *= (1 / delta)
-      drawGraph()
+      if (!wheelRAF) {
+        wheelRAF = requestAnimationFrame(() => {
+          drawGraph()
+          wheelRAF = null
+        })
+      }
     }, { passive: false })
 
     canvas.addEventListener('mousedown', (e) => {
@@ -1402,12 +1396,18 @@
       const dy = (e.clientY - dragStartY) / plotH * (gsYMax - gsYMin)
       graphState.xMin = gsXMin - dx; graphState.xMax = gsXMax - dx
       graphState.yMin = gsYMin + dy; graphState.yMax = gsYMax + dy
-      drawGraph()
+      if (!dragRAF) {
+        dragRAF = requestAnimationFrame(() => {
+          drawGraph()
+          dragRAF = null
+        })
+      }
     })
     window.addEventListener('mouseup', () => { isDragging = false })
 
     let touchStartX = 0, touchStartY = 0, touchDist = 0
     let tsXMin, tsXMax, tsYMin, tsYMax
+    let touchRAF = null
 
     canvas.addEventListener('touchstart', (e) => {
       if (e.touches.length === 1) {
@@ -1431,7 +1431,12 @@
         const dy = (e.touches[0].clientY - touchStartY) / plotH * (tsYMax - tsYMin)
         graphState.xMin = tsXMin - dx; graphState.xMax = tsXMax - dx
         graphState.yMin = tsYMin + dy; graphState.yMax = tsYMax + dy
-        drawGraph()
+        if (!touchRAF) {
+          touchRAF = requestAnimationFrame(() => {
+            drawGraph()
+            touchRAF = null
+          })
+        }
       } else if (e.touches.length === 2) {
         const newDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY)
         const scale = touchDist / newDist
@@ -1442,7 +1447,12 @@
         graphState.yMax = cy + (tsYMax - tsYMin) / 2 * scale
         graphState.zoom *= (1 / scale)
         touchDist = newDist
-        drawGraph()
+        if (!touchRAF) {
+          touchRAF = requestAnimationFrame(() => {
+            drawGraph()
+            touchRAF = null
+          })
+        }
       }
     }, { passive: false })
 
@@ -1839,10 +1849,8 @@
     calculateScale()
 
     requestAnimationFrame(() => {
-      setTimeout(() => {
-        drawGraph()
-        drawMiniGraph()
-      }, 150)
+      drawGraph()
+      drawMiniGraph()
     })
 
     // Register SW with update handling
