@@ -80,6 +80,15 @@
     return value.toFixed(decimals)
   }
 
+  function smartFormatNum (value, maxDec) {
+    if (value === undefined || value === null || !isFinite(value)) return '—'
+    if (maxDec === 0) return String(Math.round(value))
+    var rounded = roundValue(value, maxDec)
+    var str = rounded.toFixed(maxDec)
+    str = str.replace(/\.?0+$/, '')
+    return str
+  }
+
   // ============================
   // TOAST
   // ============================
@@ -346,7 +355,7 @@
 
     const result = evalFormulaExpr(expr, values)
     if (result !== null && isFinite(result)) {
-      const formatted = formatNumber(roundValue(result, 6), 6)
+      const formatted = smartFormatNum(result, 8)
       resultEl.textContent = formatted
       animateFormulaResult(resultEl)
     } else {
@@ -540,7 +549,7 @@
       try {
         const result = evalScientific(sciExpr)
         if (result !== null && isFinite(result)) {
-          sciResult = formatNumber(roundValue(result, 8), 8)
+          sciResult = smartFormatNum(result, 8)
           resEl.textContent = sciResult
           addSciHistory(sciExpr, sciResult)
           animateResult(resEl)
@@ -592,12 +601,13 @@
     const now = new Date()
     const timeStr = now.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })
     const dateStr = now.toLocaleDateString('es-ES')
+    const displayResult = smartFormatNum(parseFloat(result), 8) || result
     const entry = {
       id: Date.now(),
       type: 'cientifica',
-      expr, result,
+      expr, result: displayResult,
       time: timeStr, date: dateStr,
-      formula: `${rawToDisplay(expr)} = ${result}`
+      formula: `${rawToDisplay(expr)} = ${displayResult}`
     }
     state.sciHistory.unshift(entry)
     if (state.sciHistory.length > 200) state.sciHistory.length = 200
@@ -902,7 +912,12 @@
     var p = state.projects.find(function(p) { return p.id === state.activeProjectId; })
     if (!p) return
     if (!p.calculations) p.calculations = []
-    p.calculations.unshift({ type: type, data: data, date: new Date().toISOString() })
+    p.calculations.unshift({
+      type: type,
+      result: data.result || '',
+      formula: data.formula || data.expr || '',
+      date: new Date().toISOString()
+    })
     if (p.calculations.length > 200) p.calculations.length = 200
   }
 

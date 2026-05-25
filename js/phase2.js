@@ -1091,6 +1091,10 @@
   function bootPhase2() {
     if (alreadyBooted) return;
     alreadyBooted = true;
+    // CRITICAL: Reload state using the overridden loadState (which reads arc_projects, arc_notes, arc_canvas).
+    // Without this, projects/notes/canvas are never loaded from localStorage when scripts run at end of <body>
+    // (because app.js calls init() — and the original loadState — before phase2.js overrides it).
+    arc.loadState();
     initPhase2();
     renderProjects();
     renderNotesList();
