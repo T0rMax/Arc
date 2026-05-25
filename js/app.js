@@ -89,6 +89,12 @@
     return str
   }
 
+  function escHtml (s) {
+    var div = document.createElement('div')
+    div.appendChild(document.createTextNode(s))
+    return div.innerHTML
+  }
+
   // ============================
   // TOAST
   // ============================
@@ -304,26 +310,217 @@
     catch (e) { return null }
   }
 
+  function renderMathPreview (expr) {
+    const previewEl = document.getElementById('formulaPreview')
+    if (!previewEl) return
+    const mathEl = previewEl.querySelector('.formula-preview-math')
+    const placeholder = previewEl.querySelector('.formula-preview-placeholder')
+    if (!expr) {
+      mathEl.classList.remove('visible')
+      placeholder.style.display = ''
+      return
+    }
+    placeholder.style.display = 'none'
+    const mathFuncs = ['sin', 'cos', 'tan', 'log', 'ln', 'sqrt', 'abs', 'floor', 'ceil', 'round', 'exp']
+    let html = ''
+    let i = 0
+    while (i < expr.length) {
+      // Check for fraction a/b (greedy)
+      if (/[a-zA-Z0-9π.ε]/.test(expr[i]) && i + 1 < expr.length && expr[i + 1] === '/' && i + 2 < expr.length && /[a-zA-Z0-9π(]/.test(expr[i + 2])) {
+        let numEnd = i + 1
+        let denStart = i + 2
+        let denEnd = denStart
+        while (denEnd < expr.length && /[a-zA-Z0-9π.ε]/.test(expr[denEnd])) denEnd++
+        // Skip if numerator is part of a math function
+        if (!mathFuncs.some(f => expr.slice(i - f.length + 1, i + 1) === f)) {
+          html += `<span class="math-frac"><span class="frac-num">${escHtml(expr.slice(i, numEnd))}</span><span class="frac-den">${escHtml(expr.slice(denStart, denEnd))}</span></span>`
+          i = denEnd
+          continue
+        }
+      }
+      // Check for power x^n
+      if (/[a-zA-Z0-9π.)ε]/.test(expr[i]) && i + 1 < expr.length && expr[i + 1] === '^') {
+        const baseEnd = i + 1
+        let expStart = i + 2
+        let expEnd = expStart
+        if (expStart < expr.length && expr[expStart] === '(') { let d = 1; expEnd = expStart + 1; while (expEnd < expr.length && d > 0) { if (expr[expEnd] === '(') d++; if (expr[expEnd] === ')') d--; expEnd++ } }
+        else { while (expEnd < expr.length && /[a-zA-Z0-9π]/.test(expr[expEnd])) expEnd++ }
+        html += `<span class="math-power"><span class="power-base">${escHtml(expr.slice(i, baseEnd))}</span><span class="power-exp">${escHtml(expr.slice(expStart, expEnd))}</span></span>`
+        i = expEnd
+        continue
+      }
+      // Check for sqrt
+      if (expr[i] === '√' || expr.slice(i, i + 4) === 'sqrt') {
+        const skip = expr[i] === '√' ? 1 : 4
+        let innerStart = i + skip
+        if (expr[innerStart] === '(') { let d = 1; innerStart++; let end = innerStart; while (end < expr.length && d > 0) { if (expr[end] === '(') d++; if (expr[end] === ')') d--; end++ }
+          html += `<span class="math-sqrt"><span class="sqrt-symbol">√</span><span class="sqrt-body">${escHtml(expr.slice(innerStart, end - 1))}</span></span>`
+          i = end; continue
+        }
+        html += '√'; i++; continue
+      }
+      // Check for math functions
+      const matchedFn = mathFuncs.find(f => expr.slice(i, i + f.length) === f && (i + f.length >= expr.length || !/[a-zA-Z]/.test(expr[i + f.length])))
+      if (matchedFn) {
+        html += `<span class="math-symbol">${escHtml(matchedFn)}</span>`
+        i += matchedFn.length; continue
+      }
+      if (/[a-zA-Z]/.test(expr[i])) {
+        let varEnd = i
+        while (varEnd < expr.length && /[a-zA-Z]/.test(expr[varEnd])) varEnd++
+        html += `<span class="math-symbol">${escHtml(expr.slice(i, varEnd))}</span>`
+        i = varEnd; continue
+      }
+      if (/[\d.]/.test(expr[i])) {
+        let numEnd = i
+        while (numEnd < expr.length && /[\d.eE]/.test(expr[numEnd])) numEnd++
+        html += `<span class="math-num">${escHtml(expr.slice(i, numEnd))}</span>`
+        i = numEnd; continue
+      }
+      if ('+-*/()'.includes(expr[i])) {
+        html += `<span class="math-op">${escHtml(expr[i])}</span>`
+        i++; continue
+      }
+      html += escHtml(expr[i]); i++
+    }
+    mathEl.innerHTML = html
+    mathEl.classList.add('visible')
+  }
+
+  function updateErrorDisplay (msg) {
+    const errEl = document.getElementById('formulaError')
+    if (!errEl) return
+    if (msg) {
+      errEl.textContent = msg
+      errEl.classList.add('visible')
+      document.getElementById('formulaCalcResult').textContent = '—'
+    } else {
+      errEl.classList.remove('visible')
+    }
+  }
+
+  function drawMiniGraph (expr, vars, varValues) {
+    const container = document.getElementById('formulaMiniGraph')
+    const canvas = document.getElementById('formulaMiniCanvas')
+    if (!container || !canvas) return
+    if (vars.length !== 1) {
+      container.classList.remove('visible')
+      return
+    }
+    const v = vars[0]
+    const val = parseFloat(varValues[v])
+    const center = isNaN(val) ? 0 : val
+    const ctx = canvas.getContext('2d')
+    const dpr = window.devicePixelRatio || 1
+    const rect = canvas.getBoundingClientRect()
+    const w = rect.width
+    const h = rect.height
+    canvas.width = w * dpr
+    canvas.height = h * dpr
+    ctx.scale(dpr, dpr)
+
+    const scale = 30
+    const xMin = center - w / (2 * scale)
+    const xMax = center + w / (2 * scale)
+    const yMin = -h / (2 * scale)
+    const yMax = h / (2 * scale)
+
+    ctx.clearRect(0, 0, w, h)
+
+    // Grid
+    ctx.strokeStyle = 'rgba(255,255,255,0.06)'
+    ctx.lineWidth = 1
+    for (let x = Math.ceil(xMin); x <= Math.floor(xMax); x++) {
+      const px = (x - xMin) / (xMax - xMin) * w
+      ctx.beginPath(); ctx.moveTo(px, 0); ctx.lineTo(px, h); ctx.stroke()
+    }
+    for (let y = Math.ceil(yMin); y <= Math.floor(yMax); y++) {
+      const py = h - (y - yMin) / (yMax - yMin) * h
+      if (py >= 0 && py <= h) { ctx.beginPath(); ctx.moveTo(0, py); ctx.lineTo(w, py); ctx.stroke() }
+    }
+
+    // Axes
+    const originX = (0 - xMin) / (xMax - xMin) * w
+    const originY = h - (0 - yMin) / (yMax - yMin) * h
+    ctx.strokeStyle = 'rgba(255,255,255,0.15)'
+    ctx.lineWidth = 1
+    ctx.beginPath(); ctx.moveTo(originX, 0); ctx.lineTo(originX, h); ctx.stroke()
+    ctx.beginPath(); ctx.moveTo(0, originY); ctx.lineTo(w, originY); ctx.stroke()
+
+    // Compute function
+    const compiledExpr = expr
+      .replace(/×/g, '*').replace(/÷/g, '/').replace(/−/g, '-')
+      .replace(/\^/g, '**')
+      .replace(/sin\(/g, 'Math.sin(').replace(/cos\(/g, 'Math.cos(')
+      .replace(/tan\(/g, 'Math.tan(').replace(/log\(/g, 'Math.log10(')
+      .replace(/ln\(/g, 'Math.log(').replace(/sqrt\(/g, 'Math.sqrt(')
+      .replace(/√\(/g, 'Math.sqrt(')
+      .replace(/π/g, 'Math.PI').replace(/pi/gi, 'Math.PI')
+
+    const points = []
+    const steps = w
+    for (let px = 0; px <= steps; px++) {
+      const xVal = xMin + (px / steps) * (xMax - xMin)
+      let sanitized = compiledExpr.replace(new RegExp('\\b' + v + '\\b', 'g'), `(${xVal})`)
+      if (!/^[\d\s+\-*/().,%a-zA-Z.MathPI]+$/.test(sanitized)) { points.push(null); continue }
+      let open = (sanitized.match(/\(/g) || []).length
+      let close = (sanitized.match(/\)/g) || []).length
+      while (close < open) { sanitized += ')'; close++ }
+      try {
+        const yVal = Function('"use strict"; return (' + sanitized + ')')()
+        points.push(isFinite(yVal) ? yVal : null)
+      } catch { points.push(null) }
+    }
+
+    // Draw curve
+    ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--accent-light').trim() || '#42a5f5'
+    ctx.lineWidth = 2
+    ctx.beginPath()
+    let started = false
+    for (let px = 0; px <= steps; px++) {
+      const yVal = points[px]
+      if (yVal === null) { started = false; continue }
+      const py = h - (yVal - yMin) / (yMax - yMin) * h
+      if (py < -100 || py > h + 100) { started = false; continue }
+      if (!started) { ctx.moveTo(px, py); started = true }
+      else ctx.lineTo(px, py)
+    }
+    ctx.stroke()
+
+    container.classList.add('visible')
+  }
+
   function formulaCalcUpdate () {
     const exprInput = document.getElementById('formulaCalcExpr')
     const varsContainer = document.getElementById('formulaCalcVars')
     const resultEl = document.getElementById('formulaCalcResult')
     const nameEl = document.getElementById('formulaCalcName')
+    const clearBtn = document.getElementById('formulaCalcClear')
 
     if (!exprInput) return
     const expr = exprInput.value.trim()
     formulaCalcExpr = expr
 
+    renderMathPreview(expr)
+    updateErrorDisplay(null)
+    if (clearBtn && expr) {
+      clearBtn.classList.add('visible')
+      nameEl?.classList.add('visible')
+    } else {
+      clearBtn?.classList.remove('visible')
+      if (!expr) nameEl?.classList.remove('visible')
+    }
+
     if (!expr) {
       varsContainer.innerHTML = ''
       resultEl.textContent = '—'
-      nameEl.textContent = 'Ingresa o selecciona una fórmula'
+      if (!formulaCalcCurrentId) nameEl.textContent = 'Ingresa o selecciona una fórmula'
       return
     }
 
     const vars = detectVariables(expr)
     const existingInputs = {}
-    varsContainer.querySelectorAll('.formula-calc-var-input').forEach(inp => {
+    varsContainer.querySelectorAll('.formula-smart-var-input').forEach(inp => {
       existingInputs[inp.dataset.var] = inp.value
     })
 
@@ -331,18 +528,17 @@
       varsContainer.innerHTML = vars.map(v => {
         const val = existingInputs[v] !== undefined ? existingInputs[v] : '0'
         formulaCalcVars[v] = val
-        return `<div class="formula-calc-var-chip">
-          <span class="formula-calc-var-label">${v}</span>
-          <input type="number" class="formula-calc-var-input" data-var="${v}" value="${val}" placeholder="0" step="any">
+        return `<div class="formula-smart-var-chip">
+          <span class="formula-smart-var-label">${v}</span>
+          <input type="number" class="formula-smart-var-input" data-var="${v}" value="${val}" placeholder="0" step="any">
         </div>`
       }).join('')
     } else {
       varsContainer.innerHTML = ''
     }
 
-    // Collect current values and evaluate
     const values = {}
-    varsContainer.querySelectorAll('.formula-calc-var-input').forEach(inp => {
+    varsContainer.querySelectorAll('.formula-smart-var-input').forEach(inp => {
       const v = inp.dataset.var
       const val = parseFloat(inp.value)
       values[v] = isNaN(val) ? 0 : val
@@ -354,9 +550,14 @@
       const formatted = smartFormatNum(result, 8)
       resultEl.textContent = formatted
       animatePop(resultEl)
+      updateErrorDisplay(null)
     } else {
       resultEl.textContent = 'Error'
+      updateErrorDisplay('La expresión no es válida o contiene errores de sintaxis.')
     }
+
+    // Trigger mini graph for single-variable formulas
+    drawMiniGraph(expr, vars, formulaCalcVars)
   }
 
   function addFormulaHistory (expr, varValues, result) {
@@ -381,7 +582,12 @@
     document.getElementById('formulaCalcExpr').value = ''
     document.getElementById('formulaCalcVars').innerHTML = ''
     document.getElementById('formulaCalcResult').textContent = '—'
-    document.getElementById('formulaCalcName').textContent = 'Ingresa o selecciona una fórmula'
+    document.getElementById('formulaCalcName').textContent = ''
+    document.getElementById('formulaCalcClear').classList.remove('visible')
+    document.getElementById('formulaCalcName').classList.remove('visible')
+    document.getElementById('formulaMiniGraph')?.classList.remove('visible')
+    renderMathPreview('')
+    updateErrorDisplay(null)
     formulaCalcExpr = ''
     formulaCalcVars = {}
     formulaCalcCurrentId = null
@@ -392,12 +598,14 @@
     const exprInput = document.getElementById('formulaCalcExpr')
     exprInput.value = formula.expr
     formulaCalcCurrentId = formula.id
-    document.getElementById('formulaCalcName').textContent = formula.name
+    const nameEl = document.getElementById('formulaCalcName')
+    nameEl.textContent = formula.name
+    nameEl.classList.add('visible')
+    document.getElementById('formulaCalcClear').classList.add('visible')
     formulaCalcUpdate()
     navigateTo('formulas')
-    // Focus first var input after render
     setTimeout(() => {
-      const firstInput = document.querySelector('.formula-calc-var-input')
+      const firstInput = document.querySelector('.formula-smart-var-input')
       if (firstInput) firstInput.focus()
     }, 100)
   }
@@ -1171,25 +1379,22 @@
       if (val && val !== '—') navigator.clipboard.writeText(val).then(() => showToast('Copiado: ' + val))
     })
 
-    // ===== FORMULA CALCULATOR =====
+    // ===== SMART FORMULA CALCULATOR =====
     const formulaCalcExprInput = document.getElementById('formulaCalcExpr')
     if (formulaCalcExprInput) {
       formulaCalcExprInput.addEventListener('input', formulaCalcUpdate)
       formulaCalcExprInput.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') formulaCalcUpdate()
+        if (e.key === 'Enter') {
+          formulaCalcUpdate()
+          const expr = formulaCalcExprInput.value.trim()
+          const result = document.getElementById('formulaCalcResult').textContent
+          if (expr && result && result !== '—' && result !== 'Error') {
+            addFormulaHistory(expr, { ...formulaCalcVars }, result)
+            showToast('Resultado guardado en historial')
+          }
+        }
       })
     }
-
-    // Formula calc eval button
-    document.getElementById('formulaCalcEval')?.addEventListener('click', () => {
-      formulaCalcUpdate()
-      const expr = document.getElementById('formulaCalcExpr').value.trim()
-      const result = document.getElementById('formulaCalcResult').textContent
-      if (expr && result && result !== '—' && result !== 'Error') {
-        addFormulaHistory(expr, { ...formulaCalcVars }, result)
-        showToast('Resultado guardado en historial')
-      }
-    })
 
     // Formula calc clear
     document.getElementById('formulaCalcClear')?.addEventListener('click', formulaCalcClear)
@@ -1202,8 +1407,22 @@
 
     // Live variable input changes
     document.getElementById('formulaCalcVars')?.addEventListener('input', (e) => {
-      const input = e.target.closest('.formula-calc-var-input')
+      const input = e.target.closest('.formula-smart-var-input')
       if (input) formulaCalcUpdate()
+    })
+
+    // Graph toggle button
+    document.getElementById('formulaGraphBtn')?.addEventListener('click', () => {
+      const container = document.getElementById('formulaMiniGraph')
+      if (container) {
+        container.classList.toggle('visible')
+        if (container.classList.contains('visible')) formulaCalcUpdate()
+      }
+    })
+
+    // Close mini graph
+    document.getElementById('formulaMiniGraphClose')?.addEventListener('click', () => {
+      document.getElementById('formulaMiniGraph')?.classList.remove('visible')
     })
 
     // Toggle formula library visibility
@@ -1336,7 +1555,7 @@
       const chips = document.getElementById('varsPreviewChips')
       if (vars.length > 0) {
         preview.style.display = 'block'
-        chips.innerHTML = vars.map(v => `<span class="formula-calc-var-chip" style="display:inline-flex;margin:2px"><span class="formula-calc-var-label">${v}</span></span>`).join('')
+        chips.innerHTML = vars.map(v => `<span class="formula-smart-var-chip" style="display:inline-flex;margin:2px"><span class="formula-smart-var-label">${v}</span></span>`).join('')
       } else {
         preview.style.display = 'none'
       }
