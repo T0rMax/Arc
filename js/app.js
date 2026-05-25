@@ -45,6 +45,7 @@
       const p = localStorage.getItem('arc_pinned')
       if (p) state.pinnedFormulas = JSON.parse(p)
     } catch (e) {}
+    state.version = '3.5.0'
     // Ensure arrays exist
     if (!state.scaleHistory) state.scaleHistory = []
     if (!state.formulaHistory) state.formulaHistory = []
