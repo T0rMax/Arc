@@ -3,7 +3,7 @@
    Cache-first for assets, network-first for API
    ============================================ */
 
-const CACHE_NAME = 'arc-cache-v3'
+const CACHE_NAME = 'arc-cache-v3-5'
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -146,7 +146,7 @@ self.addEventListener('message', (e) => {
 // ============================
 // VERSION
 // ============================
-const APP_VERSION = '3.0.0'
+const APP_VERSION = '3.5.0'
 self.addEventListener('install', () => {
   self.clients.matchAll().then((clients) =>
     clients.forEach((client) => client.postMessage({ type: 'SW_VERSION', version: APP_VERSION }))

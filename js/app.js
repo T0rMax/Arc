@@ -19,7 +19,7 @@
     categories: ['arquitectura', 'fisica', 'matematica', 'personalizadas'],
     currentFormulaCategory: 'arquitectura',
     pinnedFormulas: [],
-    version: '3.0.0'
+    version: '3.5.0'
   }
 
   const accentMap = {
@@ -147,9 +147,12 @@
     const dateStr = now.toLocaleDateString('es-ES')
     const allHistory = [...state.scaleHistory, ...state.formulaHistory, ...state.sciHistory]
     const todayCount = allHistory.filter(h => h.date === dateStr).length
-    document.getElementById('dashCalcCount').textContent = todayCount
-    document.getElementById('dashFormulaCount').textContent = state.formulas.length
-    document.getElementById('dashFavCount').textContent = state.pinnedFormulas.length
+    const calcEl = document.getElementById('dashCalcCount')
+    if (calcEl && calcEl.textContent !== String(todayCount)) { calcEl.textContent = todayCount; animatePop(calcEl) }
+    const formEl = document.getElementById('dashFormulaCount')
+    if (formEl && formEl.textContent !== String(state.formulas.length)) { formEl.textContent = state.formulas.length; animatePop(formEl) }
+    const favEl = document.getElementById('dashFavCount')
+    if (favEl && favEl.textContent !== String(state.pinnedFormulas.length)) { favEl.textContent = state.pinnedFormulas.length; animatePop(favEl) }
 
     // Recent calcs (from all histories)
     const recentList = document.getElementById('dashRecentList')
@@ -158,10 +161,10 @@
       recentList.innerHTML = '<div class="dash-empty"><p>Aún no hay cálculos</p></div>'
     } else {
       recentList.innerHTML = recent.map(h => {
-        const typeLabel = { escalas: '📐', formulas: '📊', cientifica: '🔬' }[h.type] || ''
+        const typeLabel = { escalas: 'Esc', formulas: 'Frm', cientifica: 'Sci' }[h.type] || ''
         return `<div class="dash-recent-item">
           <span class="dash-recent-item-result">${h.result}</span>
-          <div class="dash-recent-item-info">${typeLabel} ${h.date} ${h.time}<br>${h.formula}</div>
+          <div class="dash-recent-item-info">${typeLabel} · ${h.time}<br>${h.formula}</div>
         </div>`
       }).join('')
     }
@@ -207,13 +210,7 @@
     document.getElementById('resultValue').textContent = formatted
     document.getElementById('calcFormulaLabel').textContent = `x · ${formatNumber(mult, 4)} ÷ ${formatNumber(div, 4)}`
 
-    const display = document.getElementById('calcDisplay')
-    display.style.transition = 'none'
-    display.style.transform = 'scale(1.03)'
-    requestAnimationFrame(() => {
-      display.style.transition = 'transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)'
-      display.style.transform = 'scale(1)'
-    })
+    animatePop(document.getElementById('calcDisplay'))
 
     return { x, mult, div, result: formatted, raw: rounded }
   }
@@ -356,19 +353,10 @@
     if (result !== null && isFinite(result)) {
       const formatted = smartFormatNum(result, 8)
       resultEl.textContent = formatted
-      animateFormulaResult(resultEl)
+      animatePop(resultEl)
     } else {
       resultEl.textContent = 'Error'
     }
-  }
-
-  function animateFormulaResult (el) {
-    el.style.transition = 'none'
-    el.style.transform = 'scale(1.05)'
-    requestAnimationFrame(() => {
-      el.style.transition = 'transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)'
-      el.style.transform = 'scale(1)'
-    })
   }
 
   function addFormulaHistory (expr, varValues, result) {
@@ -576,10 +564,21 @@
   }
 
   function animateResult (el) {
+    el.style.transform = 'scale(1.08)'
     el.style.transition = 'none'
-    el.style.transform = 'scale(1.05)'
+    el.getBoundingClientRect()
     requestAnimationFrame(() => {
-      el.style.transition = 'transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)'
+      el.style.transition = 'transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1)'
+      el.style.transform = 'scale(1)'
+    })
+  }
+
+  function animatePop (el) {
+    el.style.transform = 'scale(0.95)'
+    el.style.transition = 'none'
+    el.getBoundingClientRect()
+    requestAnimationFrame(() => {
+      el.style.transition = 'transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)'
       el.style.transform = 'scale(1)'
     })
   }
@@ -644,8 +643,9 @@
     const canvas = document.getElementById('graphCanvas')
     if (!canvas) return
     const rect = canvas.parentElement.getBoundingClientRect()
-    const dpr = window.devicePixelRatio || 1
+    const dpr = Math.min(window.devicePixelRatio || 1, 2)
     const w = rect.width; const h = rect.height
+    if (w === 0 || h === 0) return
     canvas.width = w * dpr; canvas.height = h * dpr
     canvas.style.width = w + 'px'; canvas.style.height = h + 'px'
     const ctx = canvas.getContext('2d')
@@ -664,7 +664,7 @@
     ctx.fillRect(0, 0, w, h)
 
     ctx.strokeStyle = 'rgba(255,255,255,0.04)'
-    ctx.lineWidth = 1
+    ctx.lineWidth = 0.5
     const xStep = Math.pow(10, Math.floor(Math.log10((xMax - xMin) / 5)))
     const yStep = Math.pow(10, Math.floor(Math.log10((yMax - yMin) / 5)))
     for (let x = Math.floor(xMin / xStep) * xStep; x <= xMax; x += xStep) {
@@ -676,13 +676,13 @@
       ctx.beginPath(); ctx.moveTo(pad, py); ctx.lineTo(w - pad, py); ctx.stroke()
     }
 
-    ctx.strokeStyle = 'rgba(255,255,255,0.12)'
+    ctx.strokeStyle = 'rgba(255,255,255,0.15)'
     ctx.lineWidth = 1.5
     const x0 = xToPixel(0); const y0 = yToPixel(0)
     if (x0 >= pad && x0 <= w - pad) { ctx.beginPath(); ctx.moveTo(x0, pad); ctx.lineTo(x0, h - pad); ctx.stroke() }
     if (y0 >= pad && y0 <= h - pad) { ctx.beginPath(); ctx.moveTo(pad, y0); ctx.lineTo(w - pad, y0); ctx.stroke() }
 
-    ctx.fillStyle = 'rgba(255,255,255,0.2)'
+    ctx.fillStyle = 'rgba(255,255,255,0.25)'
     ctx.font = '11px ' + getComputedStyle(document.body).fontFamily
     ctx.textAlign = 'center'
     for (let x = Math.floor(xMin / xStep) * xStep; x <= xMax; x += xStep) {
@@ -690,9 +690,10 @@
       ctx.fillText(formatNumber(x, x % 1 === 0 ? 0 : 2), xToPixel(x), h - pad + 16)
     }
     ctx.textAlign = 'right'
+    ctx.textBaseline = 'middle'
     for (let y = Math.floor(yMin / yStep) * yStep; y <= yMax; y += yStep) {
       if (Math.abs(y) < yStep * 0.01) continue
-      ctx.fillText(formatNumber(y, y % 1 === 0 ? 0 : 2), pad - 8, yToPixel(y) + 4)
+      ctx.fillText(formatNumber(y, y % 1 === 0 ? 0 : 2), pad - 10, yToPixel(y))
     }
 
     if (!expr) return
@@ -700,49 +701,65 @@
       const compiled = new Function('x', '"use strict"; return ' + parseExpression(expr))
       const accent = accentMap[state.accentColor] || '#42a5f5'
 
-      ctx.save()
-      ctx.strokeStyle = accent
-      ctx.lineWidth = 6
-      ctx.shadowColor = accent
-      ctx.shadowBlur = 20
-      ctx.globalAlpha = 0.3
-      ctx.beginPath()
-      let started = false
-      const steps = Math.max(200, Math.floor(plotW * 1.5))
+      const steps = Math.max(300, Math.floor(plotW * 2.5))
+      const points = []
       for (let i = 0; i <= steps; i++) {
         const x = xMin + (i / steps) * (xMax - xMin)
         try {
           const y = compiled(x)
           if (isFinite(y) && y > -1000 && y < 1000) {
-            const px = xToPixel(x); const py = yToPixel(y)
-            if (!started) { ctx.moveTo(px, py); started = true }
-            else ctx.lineTo(px, py)
-          } else { started = false }
-        } catch (e) { started = false }
-      }
-      ctx.stroke()
-      ctx.restore()
+            points.push({ x: xToPixel(x), y: yToPixel(y) })
+          } else if (points.length > 1) {
+            ctx.save()
+            ctx.strokeStyle = accent
+            ctx.lineWidth = 5
+            ctx.shadowColor = accent
+            ctx.shadowBlur = 24
+            ctx.globalAlpha = 0.3
+            ctx.beginPath()
+            ctx.moveTo(points[0].x, points[0].y)
+            for (let j = 1; j < points.length; j++) ctx.lineTo(points[j].x, points[j].y)
+            ctx.stroke()
+            ctx.restore()
 
-      ctx.save()
-      ctx.strokeStyle = accent
-      ctx.lineWidth = 2.5
-      ctx.shadowColor = accent
-      ctx.shadowBlur = 8
-      ctx.beginPath()
-      started = false
-      for (let i = 0; i <= steps; i++) {
-        const x = xMin + (i / steps) * (xMax - xMin)
-        try {
-          const y = compiled(x)
-          if (isFinite(y) && y > -1000 && y < 1000) {
-            const px = xToPixel(x); const py = yToPixel(y)
-            if (!started) { ctx.moveTo(px, py); started = true }
-            else ctx.lineTo(px, py)
-          } else { started = false }
-        } catch (e) { started = false }
+            ctx.save()
+            ctx.strokeStyle = accent
+            ctx.lineWidth = 2.5
+            ctx.shadowColor = accent
+            ctx.shadowBlur = 6
+            ctx.beginPath()
+            ctx.moveTo(points[0].x, points[0].y)
+            for (let j = 1; j < points.length; j++) ctx.lineTo(points[j].x, points[j].y)
+            ctx.stroke()
+            ctx.restore()
+            points.length = 0
+          } else { points.length = 0 }
+        } catch (e) { points.length = 0 }
       }
-      ctx.stroke()
-      ctx.restore()
+      if (points.length > 1) {
+        ctx.save()
+        ctx.strokeStyle = accent
+        ctx.lineWidth = 5
+        ctx.shadowColor = accent
+        ctx.shadowBlur = 24
+        ctx.globalAlpha = 0.3
+        ctx.beginPath()
+        ctx.moveTo(points[0].x, points[0].y)
+        for (let j = 1; j < points.length; j++) ctx.lineTo(points[j].x, points[j].y)
+        ctx.stroke()
+        ctx.restore()
+
+        ctx.save()
+        ctx.strokeStyle = accent
+        ctx.lineWidth = 2.5
+        ctx.shadowColor = accent
+        ctx.shadowBlur = 6
+        ctx.beginPath()
+        ctx.moveTo(points[0].x, points[0].y)
+        for (let j = 1; j < points.length; j++) ctx.lineTo(points[j].x, points[j].y)
+        ctx.stroke()
+        ctx.restore()
+      }
     } catch (e) {}
 
     document.getElementById('graphZoomLabel').textContent = Math.round(graphState.zoom * 100) + '%'
@@ -908,9 +925,10 @@
     const canvas = document.getElementById('dashMiniCanvas')
     if (!canvas) return
     const rect = canvas.parentElement.getBoundingClientRect()
-    const dpr = window.devicePixelRatio || 1
+    const dpr = Math.min(window.devicePixelRatio || 1, 2)
     const w = canvas.offsetWidth || rect.width - 48 || 250
     const h = canvas.offsetHeight || 120
+    if (w === 0 || h === 0) return
     canvas.width = w * dpr; canvas.height = h * dpr
     canvas.style.width = w + 'px'; canvas.style.height = h + 'px'
     const ctx = canvas.getContext('2d')
@@ -925,7 +943,7 @@
     ctx.fillStyle = 'transparent'
     ctx.clearRect(0, 0, w, h)
 
-    ctx.strokeStyle = 'rgba(255,255,255,0.05)'
+    ctx.strokeStyle = 'rgba(255,255,255,0.04)'
     ctx.lineWidth = 0.5
     for (let x = -4; x <= 4; x += 2) {
       const px = xToPixel(x)
@@ -939,25 +957,53 @@
     const accent = accentMap[state.accentColor] || '#42a5f5'
     try {
       const compiled = new Function('x', '"use strict"; return ' + (graphState.expr ? parseExpression(graphState.expr) : '2*x+3'))
-      ctx.save()
-      ctx.strokeStyle = accent
-      ctx.lineWidth = 2
-      ctx.shadowColor = accent
-      ctx.shadowBlur = 6
-      ctx.globalAlpha = 0.6
-      ctx.beginPath()
-      let started = false
-      for (let i = 0; i <= 100; i++) {
-        const x = xMin + (i / 100) * (xMax - xMin)
+      const steps = 200
+      const points = []
+      for (let i = 0; i <= steps; i++) {
+        const x = xMin + (i / steps) * (xMax - xMin)
         const y = compiled(x)
         if (isFinite(y) && y > -10 && y < 10) {
-          const px = xToPixel(x); const py = yToPixel(y)
-          if (!started) { ctx.moveTo(px, py); started = true }
-          else ctx.lineTo(px, py)
-        } else { started = false }
+          points.push({ x: xToPixel(x), y: yToPixel(y) })
+        } else if (points.length > 1) {
+          ctx.save()
+          ctx.strokeStyle = accent
+          ctx.lineWidth = 3
+          ctx.shadowColor = accent
+          ctx.shadowBlur = 10
+          ctx.globalAlpha = 0.4
+          ctx.beginPath()
+          ctx.moveTo(points[0].x, points[0].y)
+          for (let j = 1; j < points.length; j++) ctx.lineTo(points[j].x, points[j].y)
+          ctx.stroke()
+          ctx.restore()
+          points.length = 0
+        } else { points.length = 0 }
       }
-      ctx.stroke()
-      ctx.restore()
+      if (points.length > 1) {
+        ctx.save()
+        ctx.strokeStyle = accent
+        ctx.lineWidth = 3
+        ctx.shadowColor = accent
+        ctx.shadowBlur = 10
+        ctx.globalAlpha = 0.4
+        ctx.beginPath()
+        ctx.moveTo(points[0].x, points[0].y)
+        for (let j = 1; j < points.length; j++) ctx.lineTo(points[j].x, points[j].y)
+        ctx.stroke()
+        ctx.restore()
+
+        ctx.save()
+        ctx.strokeStyle = accent
+        ctx.lineWidth = 1.5
+        ctx.shadowColor = 'transparent'
+        ctx.shadowBlur = 0
+        ctx.globalAlpha = 0.8
+        ctx.beginPath()
+        ctx.moveTo(points[0].x, points[0].y)
+        for (let j = 1; j < points.length; j++) ctx.lineTo(points[j].x, points[j].y)
+        ctx.stroke()
+        ctx.restore()
+      }
     } catch (e) {}
   }
 
@@ -1415,13 +1461,13 @@
       else if (wrap.webkitRequestFullscreen) wrap.webkitRequestFullscreen()
     })
 
-    let resizeTimer
+    let resizeRAF
     window.addEventListener('resize', () => {
-      clearTimeout(resizeTimer)
-      resizeTimer = setTimeout(() => {
+      if (resizeRAF) cancelAnimationFrame(resizeRAF)
+      resizeRAF = requestAnimationFrame(() => {
         drawGraph()
         drawMiniGraph()
-      }, 200)
+      })
     })
 
     // ===== HISTORY =====
