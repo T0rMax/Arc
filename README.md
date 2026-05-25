@@ -136,7 +136,7 @@ Supports:
 # Installation
 
 ```bash
-git clone https://github.com/yourusername/arc.git
+git clone https://github.com/T0rMax/arc.git
 cd arc
 npm install
 npm run dev
