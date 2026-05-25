@@ -13,7 +13,7 @@
   --bg-glass: rgba(255,255,255,0.05);
   --glass-border: rgba(255,255,255,0.07);
   --glass-border-hover: rgba(255,255,255,0.12);
-  --glass-shadow: 0 8px 32px rgba(0,0,0,0.5), 0 1px 4px rgba(0,0,0,0.2);
+  --glass-shadow: 0 4px 24px rgba(0,0,0,0.4);
   --glass-blur: blur(16px) saturate(1.4);
   --glass-blur-heavy: blur(24px) saturate(1.5);
   --text-primary: #ffffff;
@@ -35,17 +35,9 @@
   --font-mono: 'SF Mono', 'Fira Code', 'JetBrains Mono', monospace;
   --nav-height: 68px;
   --sidebar-width: 260px;
-  --transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.25s cubic-bezier(0.4, 0, 0.2, 1), background 0.25s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-slow: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1), background 0.4s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-spring: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), border-color 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-  --transition-bounce: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), border-color 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
-  --transition-tactile: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-glow: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  --shadow-glow: 0 0 20px var(--accent-glow);
-  --shadow-glow-strong: 0 0 30px var(--accent-glow-strong);
-  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --transition: transform 0.2s ease, opacity 0.2s ease;
+  --transition-spring: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.15s ease, border-color 0.15s ease;
   --ease-out: cubic-bezier(0.4, 0, 0.2, 1);
-  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
   /* Safe area variables — fallback to 0 when env() not available */
   --sa-top: env(safe-area-inset-top, 0px);
   --sa-bottom: env(safe-area-inset-bottom, 0px);
@@ -112,55 +104,43 @@ body {
 .ambient-blob {
   position: absolute;
   border-radius: 50%;
-  filter: blur(60px);
-  opacity: 0.12;
-  will-change: transform;
+  filter: blur(80px);
+  opacity: 0.08;
   transform: translateZ(0);
-  animation: blobFloat 25s ease-in-out infinite alternate;
+  transition: opacity 1s ease;
 }
 
 .blob-1 {
-  width: 400px;
-  height: 400px;
+  width: 350px;
+  height: 350px;
   background: radial-gradient(circle, #42a5f5, transparent 70%);
-  top: -10%;
-  left: -5%;
-  animation-duration: 30s;
+  top: -8%;
+  left: -4%;
 }
 
 .blob-2 {
-  width: 320px;
-  height: 320px;
+  width: 280px;
+  height: 280px;
   background: radial-gradient(circle, #7c4dff, transparent 70%);
-  bottom: -5%;
-  right: -5%;
-  animation-duration: 25s;
-  animation-delay: -7s;
+  bottom: -4%;
+  right: -4%;
 }
 
 .blob-3 {
-  width: 240px;
-  height: 240px;
+  width: 200px;
+  height: 200px;
   background: radial-gradient(circle, #26a69a, transparent 70%);
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%) translateZ(0);
-  animation-duration: 35s;
-  animation-delay: -12s;
-  opacity: 0.06;
-}
-
-@keyframes blobFloat {
-  0% { transform: translate3d(0, 0, 0) scale(1); }
-  50% { transform: translate3d(15px, -15px, 0) scale(1.03); }
-  100% { transform: translate3d(-10px, 10px, 0) scale(0.97); }
+  opacity: 0.04;
 }
 
 .ambient-noise {
   position: absolute;
   top: 0; left: 0; right: 0; bottom: 0;
-  opacity: 0.03;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  opacity: 0.02;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='1' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   background-repeat: repeat;
   background-size: 200px 200px;
   pointer-events: none;
@@ -190,7 +170,7 @@ body {
   position: relative;
   z-index: 100;
   transform: translateZ(0);
-  transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .sidebar-header {
@@ -277,7 +257,6 @@ body {
   height: 20px;
   background: var(--accent);
   border-radius: 0 3px 3px 0;
-  box-shadow: 0 0 8px var(--accent-glow);
 }
 
 .nav-icon {
@@ -289,7 +268,6 @@ body {
 
 .nav-item.active .nav-icon {
   opacity: 1;
-  filter: drop-shadow(0 0 6px var(--accent-glow));
 }
 
 .sidebar-footer {
@@ -313,7 +291,7 @@ body {
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
-  transition: var(--transition);
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
   width: 100%;
 }
 
@@ -353,7 +331,6 @@ body {
   overflow-x: hidden;
   position: relative;
   padding-bottom: calc(var(--nav-height) + 24px + var(--sa-bottom));
-  scroll-behavior: smooth;
   -webkit-overflow-scrolling: touch;
 }
 
@@ -579,7 +556,7 @@ body {
 .dash-action:hover {
   background: rgba(255,255,255,0.07);
   border-color: var(--glass-border-hover);
-  transform: translate3d(0, -2px, 0);
+  transform: translate3d(0, -1px, 0);
 }
 
 .dash-action:active {
@@ -1059,7 +1036,7 @@ body {
 .formula-item:hover {
   background: rgba(255,255,255,0.07);
   border-color: var(--glass-border-hover);
-  transform: translate3d(0, -2px, 0);
+  transform: translate3d(0, -1px, 0);
 }
 
 .formula-item:active { transform: translate3d(0, 0, 0) scale(0.98); }
@@ -1271,14 +1248,11 @@ body {
   font-weight: 700;
   font-size: 20px;
   border-color: var(--accent);
-  box-shadow: 0 4px 16px var(--accent-glow);
   flex: 2;
 }
 
 .sci-key.enter:hover {
   background: linear-gradient(135deg, var(--accent), var(--accent-light));
-  filter: brightness(1.1);
-  transform: translate3d(0, -1px, 0);
 }
 
 .sci-key.enter:active { transform: scale(0.95); }
@@ -1341,14 +1315,7 @@ body {
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  transition: var(--transition-spring);
   flex-shrink: 0;
-  box-shadow: 0 4px 12px var(--accent-glow);
-}
-
-.graph-submit:hover {
-  transform: translate3d(0, -2px, 0);
-  box-shadow: 0 4px 16px var(--accent-glow);
 }
 
 .graph-submit:active { transform: translateY(0) scale(0.97); }
@@ -1720,7 +1687,6 @@ body {
 
 .toggle input:checked + .toggle-track {
   background: var(--accent);
-  box-shadow: 0 0 12px var(--accent-glow);
 }
 .toggle input:checked + .toggle-track::before { transform: translateX(20px); }
 .toggle input:active + .toggle-track::before { transform: scale(0.9); }
@@ -1742,8 +1708,8 @@ body {
   padding: 0;
 }
 
-.color-swatch:hover { transform: scale(1.25); box-shadow: 0 0 16px rgba(255,255,255,0.15); }
-.color-swatch.active { border-color: #fff; box-shadow: 0 0 16px rgba(255,255,255,0.3); }
+.color-swatch:hover { transform: scale(1.15); }
+.color-swatch.active { border-color: #fff; }
 .color-swatch:active { transform: scale(0.9); }
 
 /* =============================================
@@ -2097,8 +2063,6 @@ body {
 }
 
 .bnav-item.active .bnav-icon {
-  filter: drop-shadow(0 0 10px var(--accent-glow-strong));
-  transform: scale(1.08);
 }
 
 .bnav-icon {
@@ -2354,15 +2318,8 @@ body {
   font-size: 20px;
   font-weight: 700;
   cursor: pointer;
-  transition: var(--transition-spring);
   flex-shrink: 0;
-  box-shadow: 0 4px 12px var(--accent-glow);
   min-width: 52px;
-}
-
-.formula-calc-eval-btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 20px var(--accent-glow-strong);
 }
 
 .formula-calc-eval-btn:active { transform: scale(0.95); }
@@ -2518,7 +2475,6 @@ body {
   background: var(--accent-glow);
   border-color: var(--accent);
   color: #fff;
-  box-shadow: 0 0 16px var(--accent-glow);
 }
 
 /* =============================================
@@ -2610,7 +2566,7 @@ body {
 
 @keyframes installBounce {
   0%, 100% { transform: translate3d(0, 0, 0); }
-  50% { transform: translate3d(0, -2px, 0); }
+  50% { transform: translate3d(0, -1px, 0); }
 }
 
 .install-btn.hidden {
@@ -3253,7 +3209,14 @@ body {
 
 input[type="number"] { -webkit-appearance: none; appearance: none; }
 
-
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  .ambient-blob { display: none; }
+}
 
 /* --- PRINT STYLES FOR PDF --- */
 @media print {

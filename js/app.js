@@ -696,8 +696,15 @@
 
     if (!expr) return
     try {
-      const compiled = new Function('x', '"use strict"; return ' + parseExpression(expr))
-      const accent = accentMap[state.accentColor] || '#42a5f5'
+      const cachedKey = expr + '|' + state.accentColor + '|' + dpr
+      if (!drawGraph._cache || drawGraph._cache.key !== cachedKey) {
+        drawGraph._cache = {
+          key: cachedKey,
+          compiled: new Function('x', '"use strict"; return ' + parseExpression(expr)),
+          accent: accentMap[state.accentColor] || '#42a5f5'
+        }
+      }
+      const { compiled, accent } = drawGraph._cache
 
       const steps = Math.max(200, Math.floor(plotW * 1.5))
       const points = []
