@@ -6,8 +6,7 @@
   // ============================
   const state = {
     currentSection: 'dashboard',
-    calcMultiplier: 1,
-    calcDivisor: 1,
+    calcDivisor: 100,
     favFilterActive: false,
     rounding: 2,
     animations: true,
@@ -19,7 +18,7 @@
     categories: ['arquitectura', 'fisica', 'matematica', 'personalizadas'],
     currentFormulaCategory: 'arquitectura',
     pinnedFormulas: [],
-    version: '3.5.0'
+    version: '4.0.0'
   }
 
   const accentMap = {
@@ -45,7 +44,7 @@
       const p = localStorage.getItem('arc_pinned')
       if (p) state.pinnedFormulas = JSON.parse(p)
     } catch (e) {}
-    state.version = '3.5.0'
+    state.version = '4.0.0'
     // Ensure arrays exist
     if (!state.scaleHistory) state.scaleHistory = []
     if (!state.formulaHistory) state.formulaHistory = []
@@ -57,7 +56,7 @@
     try {
       const s = { ...state }
       delete s.formulas; delete s.scaleHistory; delete s.formulaHistory
-      delete s.sciHistory; delete s.pinnedFormulas
+      delete s.sciHistory; delete s.pinnedFormulas; delete s.calcMultiplier
       localStorage.setItem('arc_state', JSON.stringify(s))
       localStorage.setItem('arc_formulas', JSON.stringify(state.formulas))
       localStorage.setItem('arc_scale_history', JSON.stringify(state.scaleHistory))
@@ -76,18 +75,18 @@
     return Math.round(value * f) / f
   }
 
-  function formatNumber (value, decimals) {
-    if (decimals === 0) return String(value)
-    return value.toFixed(decimals)
-  }
-
   function smartFormatNum (value, maxDec) {
     if (value === undefined || value === null || !isFinite(value)) return '—'
     if (maxDec === 0) return String(Math.round(value))
-    var rounded = roundValue(value, maxDec)
+    var rounded = parseFloat(value.toPrecision(12))
     var str = rounded.toFixed(maxDec)
     str = str.replace(/\.?0+$/, '')
     return str
+  }
+
+  function formatNumber (value, decimals) {
+    if (decimals === 0) return String(value)
+    return smartFormatNum(value, decimals)
   }
 
   function escHtml (s) {
@@ -194,44 +193,62 @@
   }
 
   // ============================
-  // SCALE CALCULATOR
+  // SCALE CALCULATOR — Rewritten v4.0
   // ============================
+  let scaleMode = 'real-to-scale'
+
   function calculateScale () {
     const x = parseFloat(document.getElementById('calcInput').value)
-    const mult = parseFloat(document.getElementById('multiplierInput').value) || state.calcMultiplier
-    const div = parseFloat(document.getElementById('divisorInput').value) || state.calcDivisor
+    const div = parseFloat(document.getElementById('divisorInput').value) || 1
     const rounding = state.rounding
-    state.calcMultiplier = mult
-    state.calcDivisor = div
+    const modeEl = document.getElementById('scaleModeSelect')
 
-    if (isNaN(x) || isNaN(mult) || isNaN(div) || div === 0) {
+    if (modeEl) scaleMode = modeEl.value
+
+    if (isNaN(x)) {
       document.getElementById('resultValue').textContent = '—'
       document.getElementById('calcDisplay').textContent = '0'
       return null
     }
 
-    const result = (x * mult) / div
+    let result
+    let formulaLabel
+
+    if (scaleMode === 'real-to-scale') {
+      result = x / div
+      formulaLabel = `${smartFormatNum(x, 6)} ÷ ${div}`
+    } else if (scaleMode === 'scale-to-real') {
+      result = x * div
+      formulaLabel = `${smartFormatNum(x, 6)} × ${div}`
+    } else {
+      const fromScale = parseFloat(document.getElementById('fromScaleInput').value) || 1
+      result = x * fromScale / div
+      formulaLabel = `${smartFormatNum(x, 6)} × ${fromScale} ÷ ${div}`
+    }
+
     const rounded = roundValue(result, rounding)
-    const formatted = formatNumber(rounded, rounding)
+    const formatted = smartFormatNum(rounded, rounding)
     document.getElementById('calcDisplay').textContent = formatted
     document.getElementById('resultValue').textContent = formatted
-    document.getElementById('calcFormulaLabel').textContent = `x · ${formatNumber(mult, 4)} ÷ ${formatNumber(div, 4)}`
+    document.getElementById('calcFormulaLabel').textContent = formulaLabel
 
     animatePop(document.getElementById('calcDisplay'))
 
-    return { x, mult, div, result: formatted, raw: rounded }
+    return { x, mult: scaleMode === 'real-to-scale' ? 1 : div, div, result: formatted, raw: rounded }
   }
 
   function addScaleHistory (x, mult, div, result) {
     const now = new Date()
     const timeStr = now.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })
     const dateStr = now.toLocaleDateString('es-ES')
+    const labels = { 'real-to-scale': 'Real→Esc', 'scale-to-real': 'Esc→Real', 'scale-to-scale': 'Esc→Esc' }
+    const modeLabel = labels[scaleMode] || ''
     const entry = {
       id: Date.now(),
       type: 'escalas',
       x, mult, div, result,
       time: timeStr, date: dateStr,
-      formula: `(${x} × ${mult}) ÷ ${div} = ${result}`
+      formula: `${modeLabel}: ${document.getElementById('calcFormulaLabel').textContent} = ${result}`
     }
     state.scaleHistory.unshift(entry)
     if (state.scaleHistory.length > 200) state.scaleHistory.length = 200
@@ -239,12 +256,11 @@
   }
 
   function applyScalePreset (scale) {
-    document.getElementById('multiplierInput').value = '1'
     document.getElementById('divisorInput').value = String(scale)
     document.querySelectorAll('.preset-chip.scale-preset').forEach(b => {
       b.classList.toggle('active', parseFloat(b.dataset.scale) === scale)
     })
-    document.querySelectorAll('.preset-chip[data-value]').forEach(b => b.classList.remove('active'))
+    document.getElementById('calcInput').focus()
     triggerScaleCalc()
     showToast(`Escala 1:${scale} aplicada`)
   }
@@ -257,7 +273,7 @@
       if (res) {
         addScaleHistory(res.x, res.mult, res.div, res.result)
       }
-    }, 350)
+    }, 250)
   }
 
   // ============================
@@ -400,96 +416,7 @@
     }
   }
 
-  function drawMiniGraph (expr, vars, varValues) {
-    const container = document.getElementById('formulaMiniGraph')
-    const canvas = document.getElementById('formulaMiniCanvas')
-    if (!container || !canvas) return
-    if (vars.length !== 1) {
-      container.classList.remove('visible')
-      return
-    }
-    const v = vars[0]
-    const val = parseFloat(varValues[v])
-    const center = isNaN(val) ? 0 : val
-    const ctx = canvas.getContext('2d')
-    const dpr = window.devicePixelRatio || 1
-    const rect = canvas.getBoundingClientRect()
-    const w = rect.width
-    const h = rect.height
-    canvas.width = w * dpr
-    canvas.height = h * dpr
-    ctx.scale(dpr, dpr)
-
-    const scale = 30
-    const xMin = center - w / (2 * scale)
-    const xMax = center + w / (2 * scale)
-    const yMin = -h / (2 * scale)
-    const yMax = h / (2 * scale)
-
-    ctx.clearRect(0, 0, w, h)
-
-    // Grid
-    ctx.strokeStyle = 'rgba(255,255,255,0.06)'
-    ctx.lineWidth = 1
-    for (let x = Math.ceil(xMin); x <= Math.floor(xMax); x++) {
-      const px = (x - xMin) / (xMax - xMin) * w
-      ctx.beginPath(); ctx.moveTo(px, 0); ctx.lineTo(px, h); ctx.stroke()
-    }
-    for (let y = Math.ceil(yMin); y <= Math.floor(yMax); y++) {
-      const py = h - (y - yMin) / (yMax - yMin) * h
-      if (py >= 0 && py <= h) { ctx.beginPath(); ctx.moveTo(0, py); ctx.lineTo(w, py); ctx.stroke() }
-    }
-
-    // Axes
-    const originX = (0 - xMin) / (xMax - xMin) * w
-    const originY = h - (0 - yMin) / (yMax - yMin) * h
-    ctx.strokeStyle = 'rgba(255,255,255,0.15)'
-    ctx.lineWidth = 1
-    ctx.beginPath(); ctx.moveTo(originX, 0); ctx.lineTo(originX, h); ctx.stroke()
-    ctx.beginPath(); ctx.moveTo(0, originY); ctx.lineTo(w, originY); ctx.stroke()
-
-    // Compute function
-    const compiledExpr = expr
-      .replace(/×/g, '*').replace(/÷/g, '/').replace(/−/g, '-')
-      .replace(/\^/g, '**')
-      .replace(/sin\(/g, 'Math.sin(').replace(/cos\(/g, 'Math.cos(')
-      .replace(/tan\(/g, 'Math.tan(').replace(/log\(/g, 'Math.log10(')
-      .replace(/ln\(/g, 'Math.log(').replace(/sqrt\(/g, 'Math.sqrt(')
-      .replace(/√\(/g, 'Math.sqrt(')
-      .replace(/π/g, 'Math.PI').replace(/pi/gi, 'Math.PI')
-
-    const points = []
-    const steps = w
-    for (let px = 0; px <= steps; px++) {
-      const xVal = xMin + (px / steps) * (xMax - xMin)
-      let sanitized = compiledExpr.replace(new RegExp('\\b' + v + '\\b', 'g'), `(${xVal})`)
-      if (!/^[\d\s+\-*/().,%a-zA-Z.MathPI]+$/.test(sanitized)) { points.push(null); continue }
-      let open = (sanitized.match(/\(/g) || []).length
-      let close = (sanitized.match(/\)/g) || []).length
-      while (close < open) { sanitized += ')'; close++ }
-      try {
-        const yVal = Function('"use strict"; return (' + sanitized + ')')()
-        points.push(isFinite(yVal) ? yVal : null)
-      } catch { points.push(null) }
-    }
-
-    // Draw curve
-    ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--accent-light').trim() || '#42a5f5'
-    ctx.lineWidth = 2
-    ctx.beginPath()
-    let started = false
-    for (let px = 0; px <= steps; px++) {
-      const yVal = points[px]
-      if (yVal === null) { started = false; continue }
-      const py = h - (yVal - yMin) / (yMax - yMin) * h
-      if (py < -100 || py > h + 100) { started = false; continue }
-      if (!started) { ctx.moveTo(px, py); started = true }
-      else ctx.lineTo(px, py)
-    }
-    ctx.stroke()
-
-    container.classList.add('visible')
-  }
+  // MINI GRAPH — REMOVED in v4.0
 
   function formulaCalcUpdate () {
     const exprInput = document.getElementById('formulaCalcExpr')
@@ -557,8 +484,7 @@
       updateErrorDisplay('La expresión no es válida o contiene errores de sintaxis.')
     }
 
-    // Trigger mini graph for single-variable formulas
-    drawMiniGraph(expr, vars, formulaCalcVars)
+    // MINI GRAPH REMOVED in v4.0
   }
 
   function addFormulaHistory (expr, varValues, result) {
@@ -586,7 +512,6 @@
     document.getElementById('formulaCalcName').textContent = ''
     document.getElementById('formulaCalcClear').classList.remove('visible')
     document.getElementById('formulaCalcName').classList.remove('visible')
-    document.getElementById('formulaMiniGraph')?.classList.remove('visible')
     renderMathPreview('')
     updateErrorDisplay(null)
     formulaCalcExpr = ''
@@ -747,7 +672,7 @@
           sciResult = smartFormatNum(result, 8)
           resEl.textContent = sciResult
           addSciHistory(sciExpr, sciResult)
-          animateResult(resEl)
+          animatePop(resEl)
         } else {
           resEl.textContent = 'Error'
         }
@@ -772,22 +697,11 @@
     expEl.textContent = rawToDisplay(sciExpr)
   }
 
-  function animateResult (el) {
-    el.style.transform = 'scale(1.08)'
-    el.style.transition = 'none'
-    el.offsetHeight
-    requestAnimationFrame(() => {
-      el.style.transition = 'transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1)'
-      el.style.transform = 'scale(1)'
-    })
-  }
-
   function animatePop (el) {
-    el.style.transform = 'scale(0.95)'
-    el.style.transition = 'none'
-    el.offsetHeight
+    if (!el || state.animations === false) return
+    el.style.transition = 'transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1)'
+    el.style.transform = 'scale(0.96)'
     requestAnimationFrame(() => {
-      el.style.transition = 'transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)'
       el.style.transform = 'scale(1)'
     })
   }
@@ -820,154 +734,7 @@
     persistState()
   }
 
-  // ============================
-  // GRAPHING
-  // ============================
-  let graphState = { xMin: -10, xMax: 10, yMin: -10, yMax: 10, expr: '2*x+3', zoom: 1 }
-    let isDragging = false
-    let dragStartX = 0, dragStartY = 0
-    let gsXMin, gsXMax, gsYMin, gsYMax
-    let dragRAF = null
-
-  function parseExpression (input) {
-    let s = input.trim()
-    if (s.startsWith('y=')) s = s.substring(2).trim()
-    s = s.replace(/\^/g, '**')
-    s = s.replace(/(\d)([a-zA-Z])/g, '$1*$2')
-    s = s.replace(/([a-zA-Z])(\d)/g, '$1*$2')
-    s = s.replace(/(\d)\(/g, '$1*(')
-    s = s.replace(/\)\(/g, ')*(')
-    s = s.replace(/sqrt\(/g, 'Math.sqrt(')
-    s = s.replace(/sin\(/g, 'Math.sin(')
-    s = s.replace(/cos\(/g, 'Math.cos(')
-    s = s.replace(/tan\(/g, 'Math.tan(')
-    s = s.replace(/log\(/g, 'Math.log10(')
-    s = s.replace(/ln\(/g, 'Math.log(')
-    s = s.replace(/pi/gi, 'Math.PI')
-    s = s.replace(/(\d)(x)/g, '$1*$2')
-    s = s.replace(/(x)(\d)/g, '$1*$2')
-    return s
-  }
-
-  function drawGraph () {
-    const canvas = document.getElementById('graphCanvas')
-    if (!canvas) return
-    const rect = canvas.parentElement.getBoundingClientRect()
-    const dpr = Math.min(window.devicePixelRatio || 1, 2)
-    const w = rect.width; const h = rect.height
-    if (w === 0 || h === 0) return
-    canvas.width = w * dpr; canvas.height = h * dpr
-    canvas.style.width = w + 'px'; canvas.style.height = h + 'px'
-    const ctx = canvas.getContext('2d')
-    ctx.scale(dpr, dpr)
-
-    const { xMin, xMax, yMin, yMax, expr } = graphState
-    const pad = 48
-    const plotW = w - pad * 2; const plotH = h - pad * 2
-    const xToPixel = x => pad + ((x - xMin) / (xMax - xMin)) * plotW
-    const yToPixel = y => pad + ((yMax - y) / (yMax - yMin)) * plotH
-
-    ctx.fillStyle = '#080808'
-    ctx.fillRect(0, 0, w, h)
-
-    ctx.strokeStyle = 'rgba(255,255,255,0.04)'
-    ctx.lineWidth = 0.5
-    const xStep = Math.pow(10, Math.floor(Math.log10((xMax - xMin) / 5)))
-    const yStep = Math.pow(10, Math.floor(Math.log10((yMax - yMin) / 5)))
-    for (let x = Math.floor(xMin / xStep) * xStep; x <= xMax; x += xStep) {
-      const px = xToPixel(x)
-      ctx.beginPath(); ctx.moveTo(px, pad); ctx.lineTo(px, h - pad); ctx.stroke()
-    }
-    for (let y = Math.floor(yMin / yStep) * yStep; y <= yMax; y += yStep) {
-      const py = yToPixel(y)
-      ctx.beginPath(); ctx.moveTo(pad, py); ctx.lineTo(w - pad, py); ctx.stroke()
-    }
-
-    ctx.strokeStyle = 'rgba(255,255,255,0.15)'
-    ctx.lineWidth = 1.5
-    const x0 = xToPixel(0); const y0 = yToPixel(0)
-    if (x0 >= pad && x0 <= w - pad) { ctx.beginPath(); ctx.moveTo(x0, pad); ctx.lineTo(x0, h - pad); ctx.stroke() }
-    if (y0 >= pad && y0 <= h - pad) { ctx.beginPath(); ctx.moveTo(pad, y0); ctx.lineTo(w - pad, y0); ctx.stroke() }
-
-    ctx.fillStyle = 'rgba(255,255,255,0.25)'
-    ctx.font = '11px ' + getComputedStyle(document.body).fontFamily
-    ctx.textAlign = 'center'
-    for (let x = Math.floor(xMin / xStep) * xStep; x <= xMax; x += xStep) {
-      if (Math.abs(x) < xStep * 0.01) continue
-      ctx.fillText(formatNumber(x, x % 1 === 0 ? 0 : 2), xToPixel(x), h - pad + 16)
-    }
-    ctx.textAlign = 'right'
-    ctx.textBaseline = 'middle'
-    for (let y = Math.floor(yMin / yStep) * yStep; y <= yMax; y += yStep) {
-      if (Math.abs(y) < yStep * 0.01) continue
-      ctx.fillText(formatNumber(y, y % 1 === 0 ? 0 : 2), pad - 10, yToPixel(y))
-    }
-
-    if (!expr) return
-    try {
-      const cachedKey = expr + '|' + state.accentColor + '|' + dpr
-      if (!drawGraph._cache || drawGraph._cache.key !== cachedKey) {
-        drawGraph._cache = {
-          key: cachedKey,
-          compiled: new Function('x', '"use strict"; return ' + parseExpression(expr)),
-          accent: accentMap[state.accentColor] || '#42a5f5'
-        }
-      }
-      const { compiled, accent } = drawGraph._cache
-
-      const steps = Math.max(200, Math.floor(plotW * 1.5))
-      const points = []
-      for (let i = 0; i <= steps; i++) {
-        const x = xMin + (i / steps) * (xMax - xMin)
-        try {
-          const y = compiled(x)
-          if (isFinite(y) && y > -1000 && y < 1000) {
-            points.push({ x: xToPixel(x), y: yToPixel(y) })
-          } else if (points.length > 1) {
-            ctx.save()
-            ctx.strokeStyle = accent
-            ctx.lineWidth = 6
-            ctx.globalAlpha = 0.15
-            ctx.beginPath()
-            ctx.moveTo(points[0].x, points[0].y)
-            for (let j = 1; j < points.length; j++) ctx.lineTo(points[j].x, points[j].y)
-            ctx.stroke()
-
-            ctx.strokeStyle = accent
-            ctx.lineWidth = 2.5
-            ctx.globalAlpha = 1
-            ctx.beginPath()
-            ctx.moveTo(points[0].x, points[0].y)
-            for (let j = 1; j < points.length; j++) ctx.lineTo(points[j].x, points[j].y)
-            ctx.stroke()
-            ctx.restore()
-            points.length = 0
-          } else { points.length = 0 }
-        } catch (e) { points.length = 0 }
-      }
-      if (points.length > 1) {
-        ctx.save()
-        ctx.strokeStyle = accent
-        ctx.lineWidth = 6
-        ctx.globalAlpha = 0.15
-        ctx.beginPath()
-        ctx.moveTo(points[0].x, points[0].y)
-        for (let j = 1; j < points.length; j++) ctx.lineTo(points[j].x, points[j].y)
-        ctx.stroke()
-
-        ctx.strokeStyle = accent
-        ctx.lineWidth = 2.5
-        ctx.globalAlpha = 1
-        ctx.beginPath()
-        ctx.moveTo(points[0].x, points[0].y)
-        for (let j = 1; j < points.length; j++) ctx.lineTo(points[j].x, points[j].y)
-        ctx.stroke()
-        ctx.restore()
-      }
-    } catch (e) {}
-
-    document.getElementById('graphZoomLabel').textContent = Math.round(graphState.zoom * 100) + '%'
-  }
+  // GRAPHING — REMOVED in v4.0
 
   // ============================
   // HISTORY
@@ -1102,17 +869,15 @@
     const hex = accentMap[color] || '#42a5f5'
     document.documentElement.style.setProperty('--accent', hex)
     document.documentElement.style.setProperty('--accent-light', hex)
-    document.documentElement.style.setProperty('--accent-glow', hex + '40')
-    document.documentElement.style.setProperty('--accent-glow-strong', hex + '66')
+    document.documentElement.style.setProperty('--accent-glow', hex + '30')
     document.querySelectorAll('.color-swatch').forEach(btn => {
       btn.classList.toggle('active', btn.dataset.color === color)
     })
     persistState()
   }
 
-  // ============================
-  // HELPERS
-  // ============================
+  // HELPERS REMOVED in v4.0
+  // DASHBOARD MINI GRAPH — REMOVED in v4.0
   let quickScaleTimeout
   function triggerQuickScale () {
     clearTimeout(quickScaleTimeout)
@@ -1122,94 +887,7 @@
     }, 350)
   }
 
-  // ============================
-  // DRAW MINI GRAPH (DASHBOARD)
-  // ============================
-  function drawMiniGraph () {
-    const canvas = document.getElementById('dashMiniCanvas')
-    if (!canvas) return
-    const rect = canvas.parentElement.getBoundingClientRect()
-    const dpr = Math.min(window.devicePixelRatio || 1, 2)
-    const w = canvas.offsetWidth || rect.width - 48 || 250
-    const h = canvas.offsetHeight || 120
-    if (w === 0 || h === 0) return
-    canvas.width = w * dpr; canvas.height = h * dpr
-    canvas.style.width = w + 'px'; canvas.style.height = h + 'px'
-    const ctx = canvas.getContext('2d')
-    ctx.scale(dpr, dpr)
-
-    const xMin = -5, xMax = 5, yMin = -5, yMax = 5
-    const pad = 16
-    const plotW = w - pad * 2; const plotH = h - pad * 2
-    const xToPixel = x => pad + ((x - xMin) / (xMax - xMin)) * plotW
-    const yToPixel = y => pad + ((yMax - y) / (yMax - yMin)) * plotH
-
-    ctx.fillStyle = 'transparent'
-    ctx.clearRect(0, 0, w, h)
-
-    ctx.strokeStyle = 'rgba(255,255,255,0.04)'
-    ctx.lineWidth = 0.5
-    for (let x = -4; x <= 4; x += 2) {
-      const px = xToPixel(x)
-      ctx.beginPath(); ctx.moveTo(px, pad); ctx.lineTo(px, h - pad); ctx.stroke()
-    }
-    for (let y = -4; y <= 4; y += 2) {
-      const py = yToPixel(y)
-      ctx.beginPath(); ctx.moveTo(pad, py); ctx.lineTo(w - pad, py); ctx.stroke()
-    }
-
-    const accent = accentMap[state.accentColor] || '#42a5f5'
-    try {
-      const compiled = new Function('x', '"use strict"; return ' + (graphState.expr ? parseExpression(graphState.expr) : '2*x+3'))
-      const steps = 120
-      const points = []
-      for (let i = 0; i <= steps; i++) {
-        const x = xMin + (i / steps) * (xMax - xMin)
-        const y = compiled(x)
-        if (isFinite(y) && y > -10 && y < 10) {
-          points.push({ x: xToPixel(x), y: yToPixel(y) })
-        } else if (points.length > 1) {
-          ctx.save()
-          ctx.strokeStyle = accent
-          ctx.lineWidth = 4
-          ctx.globalAlpha = 0.2
-          ctx.beginPath()
-          ctx.moveTo(points[0].x, points[0].y)
-          for (let j = 1; j < points.length; j++) ctx.lineTo(points[j].x, points[j].y)
-          ctx.stroke()
-
-          ctx.strokeStyle = accent
-          ctx.lineWidth = 1.5
-          ctx.globalAlpha = 0.8
-          ctx.beginPath()
-          ctx.moveTo(points[0].x, points[0].y)
-          for (let j = 1; j < points.length; j++) ctx.lineTo(points[j].x, points[j].y)
-          ctx.stroke()
-          ctx.restore()
-          points.length = 0
-        } else { points.length = 0 }
-      }
-      if (points.length > 1) {
-        ctx.save()
-        ctx.strokeStyle = accent
-        ctx.lineWidth = 4
-        ctx.globalAlpha = 0.2
-        ctx.beginPath()
-        ctx.moveTo(points[0].x, points[0].y)
-        for (let j = 1; j < points.length; j++) ctx.lineTo(points[j].x, points[j].y)
-        ctx.stroke()
-
-        ctx.strokeStyle = accent
-        ctx.lineWidth = 1.5
-        ctx.globalAlpha = 0.8
-        ctx.beginPath()
-        ctx.moveTo(points[0].x, points[0].y)
-        for (let j = 1; j < points.length; j++) ctx.lineTo(points[j].x, points[j].y)
-        ctx.stroke()
-        ctx.restore()
-      }
-    } catch (e) {}
-  }
+  // DASHBOARD MINI GRAPH — REMOVED in v4.0
 
   // ============================
   // ACTION MODAL (Prompt / Confirm)
@@ -1337,12 +1015,15 @@
     })
 
     // ===== SCALE CALCULATOR =====
-    const calcInput = document.getElementById('calcInput')
-    const multInput = document.getElementById('multiplierInput')
-    const divInput = document.getElementById('divisorInput')
+    const doc = document
+    const calcInput = doc.getElementById('calcInput')
+    const divInput = doc.getElementById('divisorInput')
+    const fromScaleInput = doc.getElementById('fromScaleInput')
+    const scaleModeSelect = doc.getElementById('scaleModeSelect')
     if (calcInput) calcInput.addEventListener('input', triggerScaleCalc)
-    if (multInput) multInput.addEventListener('input', triggerScaleCalc)
     if (divInput) divInput.addEventListener('input', triggerScaleCalc)
+    if (fromScaleInput) fromScaleInput.addEventListener('input', triggerScaleCalc)
+    if (scaleModeSelect) scaleModeSelect.addEventListener('change', triggerScaleCalc)
 
     // Scale presets
     document.querySelectorAll('.preset-chip.scale-preset').forEach(btn => {
@@ -1351,10 +1032,15 @@
       })
     })
 
-    // Divisor presets
+    // Scale mode toggle
+    document.getElementById('scaleModeSelect')?.addEventListener('change', function () {
+      const field = document.getElementById('fromScaleField')
+      if (field) field.style.display = this.value === 'scale-to-scale' ? 'block' : 'none'
+    })
+
+    // Divisor presets (simple value chips)
     document.querySelectorAll('.preset-chip[data-value]').forEach(btn => {
       btn.addEventListener('click', () => {
-        document.querySelectorAll('.preset-chip.scale-preset').forEach(b => b.classList.remove('active'))
         document.querySelectorAll('.preset-chip[data-value]').forEach(b => b.classList.remove('active'))
         btn.classList.add('active')
         if (btn.dataset.value === 'custom') { document.getElementById('divisorInput').focus(); return }
@@ -1410,20 +1096,6 @@
     document.getElementById('formulaCalcVars')?.addEventListener('input', (e) => {
       const input = e.target.closest('.formula-smart-var-input')
       if (input) formulaCalcUpdate()
-    })
-
-    // Graph toggle button
-    document.getElementById('formulaGraphBtn')?.addEventListener('click', () => {
-      const container = document.getElementById('formulaMiniGraph')
-      if (container) {
-        container.classList.toggle('visible')
-        if (container.classList.contains('visible')) formulaCalcUpdate()
-      }
-    })
-
-    // Close mini graph
-    document.getElementById('formulaMiniGraphClose')?.addEventListener('click', () => {
-      document.getElementById('formulaMiniGraph')?.classList.remove('visible')
     })
 
     // Toggle formula library visibility
@@ -1567,145 +1239,7 @@
       btn.addEventListener('click', () => sciInput(btn.dataset.action))
     })
 
-    // ===== GRAPH =====
-    document.getElementById('graphBtn')?.addEventListener('click', () => {
-      const input = document.getElementById('graphInput')
-      graphState.expr = input.value.trim() || '2*x+3'
-      graphState.xMin = -10; graphState.xMax = 10
-      graphState.yMin = -10; graphState.yMax = 10
-      graphState.zoom = 1
-      drawGraph()
-    })
-
-    document.querySelectorAll('.graph-preset').forEach(btn => {
-      btn.addEventListener('click', () => {
-        document.getElementById('graphInput').value = btn.dataset.eq
-        document.getElementById('graphBtn').click()
-      })
-    })
-
-    document.getElementById('graphInput')?.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') document.getElementById('graphBtn').click()
-    })
-
-    const canvas = document.getElementById('graphCanvas')
-
-    let wheelRAF = null
-    canvas.addEventListener('wheel', (e) => {
-      e.preventDefault()
-      const delta = e.deltaY > 0 ? 1.1 : 0.9
-      const cx = (graphState.xMin + graphState.xMax) / 2
-      const cy = (graphState.yMin + graphState.yMax) / 2
-      const rx = (graphState.xMax - graphState.xMin) / 2
-      const ry = (graphState.yMax - graphState.yMin) / 2
-      graphState.xMin = cx - rx * delta; graphState.xMax = cx + rx * delta
-      graphState.yMin = cy - ry * delta; graphState.yMax = cy + ry * delta
-      graphState.zoom *= (1 / delta)
-      if (!wheelRAF) {
-        wheelRAF = requestAnimationFrame(() => {
-          drawGraph()
-          wheelRAF = null
-        })
-      }
-    }, { passive: false })
-
-    canvas.addEventListener('mousedown', (e) => {
-      isDragging = true
-      dragStartX = e.clientX; dragStartY = e.clientY
-      gsXMin = graphState.xMin; gsXMax = graphState.xMax
-      gsYMin = graphState.yMin; gsYMax = graphState.yMax
-    })
-    window.addEventListener('mousemove', (e) => {
-      if (!isDragging) return
-      const rect = canvas.getBoundingClientRect()
-      const plotW = rect.width - 96; const plotH = rect.height - 96
-      const dx = (e.clientX - dragStartX) / plotW * (gsXMax - gsXMin)
-      const dy = (e.clientY - dragStartY) / plotH * (gsYMax - gsYMin)
-      graphState.xMin = gsXMin - dx; graphState.xMax = gsXMax - dx
-      graphState.yMin = gsYMin + dy; graphState.yMax = gsYMax + dy
-      if (!dragRAF) {
-        dragRAF = requestAnimationFrame(() => {
-          drawGraph()
-          dragRAF = null
-        })
-      }
-    })
-    window.addEventListener('mouseup', () => { isDragging = false })
-
-    let touchStartX = 0, touchStartY = 0, touchDist = 0
-    let tsXMin, tsXMax, tsYMin, tsYMax
-    let touchRAF = null
-
-    canvas.addEventListener('touchstart', (e) => {
-      if (e.touches.length === 1) {
-        isDragging = true
-        touchStartX = e.touches[0].clientX; touchStartY = e.touches[0].clientY
-        tsXMin = graphState.xMin; tsXMax = graphState.xMax
-        tsYMin = graphState.yMin; tsYMax = graphState.yMax
-      } else if (e.touches.length === 2) {
-        touchDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY)
-        tsXMin = graphState.xMin; tsXMax = graphState.xMax
-        tsYMin = graphState.yMin; tsYMax = graphState.yMax
-      }
-    }, { passive: true })
-
-    canvas.addEventListener('touchmove', (e) => {
-      e.preventDefault()
-      if (e.touches.length === 1 && isDragging) {
-        const rect = canvas.getBoundingClientRect()
-        const plotW = rect.width - 96; const plotH = rect.height - 96
-        const dx = (e.touches[0].clientX - touchStartX) / plotW * (tsXMax - tsXMin)
-        const dy = (e.touches[0].clientY - touchStartY) / plotH * (tsYMax - tsYMin)
-        graphState.xMin = tsXMin - dx; graphState.xMax = tsXMax - dx
-        graphState.yMin = tsYMin + dy; graphState.yMax = tsYMax + dy
-        if (!touchRAF) {
-          touchRAF = requestAnimationFrame(() => {
-            drawGraph()
-            touchRAF = null
-          })
-        }
-      } else if (e.touches.length === 2) {
-        const newDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY)
-        const scale = touchDist / newDist
-        const cx = (tsXMin + tsXMax) / 2; const cy = (tsYMin + tsYMax) / 2
-        graphState.xMin = cx - (tsXMax - tsXMin) / 2 * scale
-        graphState.xMax = cx + (tsXMax - tsXMin) / 2 * scale
-        graphState.yMin = cy - (tsYMax - tsYMin) / 2 * scale
-        graphState.yMax = cy + (tsYMax - tsYMin) / 2 * scale
-        graphState.zoom *= (1 / scale)
-        touchDist = newDist
-        if (!touchRAF) {
-          touchRAF = requestAnimationFrame(() => {
-            drawGraph()
-            touchRAF = null
-          })
-        }
-      }
-    }, { passive: false })
-
-    canvas.addEventListener('touchend', () => { isDragging = false })
-
-    document.getElementById('graphReset')?.addEventListener('click', () => {
-      graphState.xMin = -10; graphState.xMax = 10
-      graphState.yMin = -10; graphState.yMax = 10
-      graphState.zoom = 1
-      drawGraph()
-    })
-
-    document.getElementById('graphFullscreen')?.addEventListener('click', () => {
-      const wrap = document.getElementById('graphWrap')
-      if (wrap.requestFullscreen) wrap.requestFullscreen()
-      else if (wrap.webkitRequestFullscreen) wrap.webkitRequestFullscreen()
-    })
-
-    let resizeRAF
-    window.addEventListener('resize', () => {
-      if (resizeRAF) cancelAnimationFrame(resizeRAF)
-      resizeRAF = requestAnimationFrame(() => {
-        drawGraph()
-        drawMiniGraph()
-      })
-    })
+    // GRAPH EVENT HANDLERS — REMOVED in v4.0
 
     // ===== HISTORY =====
     document.querySelectorAll('.history-tab').forEach(tab => {
@@ -1785,8 +1319,6 @@
     document.querySelectorAll('.color-swatch').forEach(btn => {
       btn.addEventListener('click', () => {
         applyAccentColor(btn.dataset.color)
-        if (state.currentSection === 'graficos') drawGraph()
-        drawMiniGraph()
       })
     })
 
@@ -2025,7 +1557,7 @@
     updateOnlineStatus()
 
     // ===== APP VERSION =====
-    document.getElementById('appVersionValue').textContent = state.version || '3.0.0'
+    document.getElementById('appVersionValue').textContent = state.version || '4.0.0'
 
     // ===== CLEAR CACHE =====
     document.getElementById('clearCacheBtn')?.addEventListener('click', () => {
@@ -2075,11 +1607,6 @@
     }
     calculateScale()
 
-    requestAnimationFrame(() => {
-      drawGraph()
-      drawMiniGraph()
-    })
-
     // Register SW with update handling
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('sw.js').then((registration) => {
@@ -2107,6 +1634,39 @@
     }
   }
 
+  // ============================
+  // SCALE VALIDATION (v4.0)
+  // ============================
+  function runScaleValidation () {
+    var errors = []
+    var testRealToScale = function (real, scale, expected) {
+      var result = real / scale
+      if (Math.abs(result - expected) > 0.0001) errors.push('Real→Esc: ' + real + 'cm @1:' + scale + ' = ' + result + ' (expected ' + expected + ')')
+    }
+    var testScaleToScale = function (val, fromS, toS, expected) {
+      var result = val * fromS / toS
+      if (Math.abs(result - expected) > 0.0001) errors.push('Esc→Esc: ' + val + 'cm ' + fromS + '→' + toS + ' = ' + result + ' (expected ' + expected + ')')
+    }
+    testRealToScale(100, 100, 1)
+    testRealToScale(100, 50, 2)
+    testRealToScale(100, 20, 5)
+    testRealToScale(100, 10, 10)
+    testRealToScale(200, 100, 2)
+    testRealToScale(1000, 100, 10)
+    testRealToScale(500, 50, 10)
+    testScaleToScale(1, 100, 50, 2)
+    testScaleToScale(2, 50, 100, 1)
+    testScaleToScale(5, 20, 100, 1)
+    testScaleToScale(0.5, 200, 100, 1)
+    if (errors.length > 0) {
+      console.warn('[ARC v4.0] Scale validation FAILED:', errors)
+    } else {
+      console.log('[ARC v4.0] Scale validation PASSED')
+    }
+    return errors
+  }
+
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init)
   else init()
+  runScaleValidation()
 })()

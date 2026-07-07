@@ -10,20 +10,18 @@
   --bg-surface: #070707;
   --bg-card: rgba(255,255,255,0.04);
   --bg-card-hover: rgba(255,255,255,0.07);
-  --bg-glass: rgba(255,255,255,0.05);
+  --bg-glass: rgba(255,255,255,0.04);
   --glass-border: rgba(255,255,255,0.07);
   --glass-border-hover: rgba(255,255,255,0.12);
-  --glass-shadow: 0 4px 24px rgba(0,0,0,0.4);
-  --glass-blur: blur(16px) saturate(1.4);
-  --glass-blur-heavy: blur(24px) saturate(1.5);
+  --glass-shadow: 0 2px 16px rgba(0,0,0,0.3);
+  --glass-blur: blur(12px);
   --text-primary: #ffffff;
   --text-secondary: rgba(255,255,255,0.6);
   --text-tertiary: rgba(255,255,255,0.3);
   --accent: #42a5f5;
   --accent-light: #64b5f6;
   --accent-dark: #1e88e5;
-  --accent-glow: rgba(66,165,245,0.25);
-  --accent-glow-strong: rgba(66,165,245,0.4);
+  --accent-glow: rgba(66,165,245,0.18);
   --danger: #ef5350;
   --danger-glow: rgba(239,83,80,0.2);
   --radius-xs: 6px;
@@ -35,10 +33,9 @@
   --font-mono: 'SF Mono', 'Fira Code', 'JetBrains Mono', monospace;
   --nav-height: 68px;
   --sidebar-width: 260px;
-  --transition: transform 0.2s ease, opacity 0.2s ease;
-  --transition-spring: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.15s ease, border-color 0.15s ease;
-  --ease-out: cubic-bezier(0.4, 0, 0.2, 1);
-  /* Safe area variables — fallback to 0 when env() not available */
+  --transition: transform 0.15s ease, opacity 0.15s ease;
+  --transition-spring: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.12s ease, border-color 0.12s ease;
+  /* Safe area variables */
   --sa-top: env(safe-area-inset-top, 0px);
   --sa-bottom: env(safe-area-inset-bottom, 0px);
   --sa-left: env(safe-area-inset-left, 0px);
@@ -104,46 +101,35 @@ body {
 .ambient-blob {
   position: absolute;
   border-radius: 50%;
-  filter: blur(80px);
-  opacity: 0.08;
-  transform: translateZ(0);
-  transition: opacity 1s ease;
+  filter: blur(60px);
+  opacity: 0.06;
+  will-change: opacity;
 }
 
 .blob-1 {
-  width: 350px;
-  height: 350px;
-  background: radial-gradient(circle, #42a5f5, transparent 70%);
-  top: -8%;
-  left: -4%;
+  width: 300px;
+  height: 300px;
+  background: #42a5f5;
+  top: -10%;
+  left: -6%;
 }
 
 .blob-2 {
-  width: 280px;
-  height: 280px;
-  background: radial-gradient(circle, #7c4dff, transparent 70%);
-  bottom: -4%;
-  right: -4%;
+  width: 240px;
+  height: 240px;
+  background: #7c4dff;
+  bottom: -6%;
+  right: -6%;
 }
 
 .blob-3 {
-  width: 200px;
-  height: 200px;
-  background: radial-gradient(circle, #26a69a, transparent 70%);
+  width: 160px;
+  height: 160px;
+  background: #26a69a;
   top: 50%;
   left: 50%;
-  transform: translate(-50%, -50%) translateZ(0);
-  opacity: 0.04;
-}
-
-.ambient-noise {
-  position: absolute;
-  top: 0; left: 0; right: 0; bottom: 0;
-  opacity: 0.02;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='1' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-  background-repeat: repeat;
-  background-size: 200px 200px;
-  pointer-events: none;
+  transform: translate(-50%, -50%);
+  opacity: 0.03;
 }
 
 /* =============================================
@@ -160,16 +146,13 @@ body {
 .sidebar {
   width: var(--sidebar-width);
   height: 100vh;
-  background: rgba(7,7,7,0.9);
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
+  background: rgba(7,7,7,0.95);
   border-right: 1px solid var(--glass-border);
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
   position: relative;
   z-index: 100;
-  transform: translateZ(0);
   transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -226,7 +209,7 @@ body {
   font-weight: 500;
   border-radius: var(--radius-sm);
   cursor: pointer;
-  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), background 0.2s cubic-bezier(0.4, 0, 0.2, 1), color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: background 0.15s ease, color 0.15s ease;
   text-align: left;
   width: 100%;
   position: relative;
@@ -338,8 +321,8 @@ body {
 .section.active { display: block; animation: sectionIn 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
 
 @keyframes sectionIn {
-  from { opacity: 0; transform: translate3d(0, 8px, 0); }
-  to { opacity: 1; transform: translate3d(0, 0, 0); }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 /* =============================================
@@ -354,9 +337,7 @@ body {
   position: sticky;
   top: 0;
   z-index: 50;
-  background: linear-gradient(180deg, rgba(0,0,0,0.95) 0%, transparent 100%);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: rgba(0,0,0,0.92);
   min-height: 64px;
 }
 
@@ -446,18 +427,14 @@ body {
    ============================================= */
 .glass {
   background: var(--bg-glass);
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
   border: 1px solid var(--glass-border);
   border-radius: var(--radius-md);
   box-shadow: var(--glass-shadow);
-  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.25s cubic-bezier(0.4, 0, 0.2, 1), background 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  transform: translateZ(0);
+  transition: border-color 0.15s ease, background 0.15s ease;
 }
 
 .glass:hover {
   border-color: var(--glass-border-hover);
-  box-shadow: var(--glass-shadow);
 }
 
 /* =============================================
@@ -700,7 +677,7 @@ body {
   left: 0;
   right: 0;
   height: 1px;
-  background: linear-gradient(90deg, transparent, var(--accent-glow), transparent);
+  background: rgba(255,255,255,0.06);
 }
 
 .calc-formula-label {
@@ -870,8 +847,9 @@ body {
   left: 0;
   width: 3px;
   height: 100%;
-  background: linear-gradient(180deg, var(--accent), transparent);
+  background: var(--accent);
   border-radius: 3px;
+  opacity: 0.5;
 }
 
 .result-info { flex: 1; }
@@ -1261,20 +1239,10 @@ body {
   overflow: hidden;
 }
 
-.sci-key::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(circle at center, rgba(255,255,255,0.1), transparent 70%);
-  opacity: 0;
-  transition: opacity 0.2s ease;
-}
-
 .sci-key:hover {
   background: rgba(255,255,255,0.08);
   border-color: var(--glass-border-hover);
 }
-.sci-key:hover::after { opacity: 0.6; }
 .sci-key:active { transform: scale(0.9); }
 .sci-key.fn:active { transform: scale(0.9); }
 
@@ -1315,161 +1283,7 @@ body {
 
 .sci-key.enter:active { transform: scale(0.95); }
 
-/* =============================================
-   GRAPHS
-   ============================================= */
-.graph-container {
-  padding: 0 28px 28px;
-  max-width: 900px;
-  margin: 0 auto;
-}
-
-.graph-input-panel {
-  padding: 20px 24px;
-  margin-bottom: 20px;
-}
-
-.graph-input-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 14px;
-}
-
-.graph-prefix {
-  font-size: 20px;
-  font-weight: 700;
-  color: var(--text-secondary);
-  flex-shrink: 0;
-  font-family: var(--font-mono);
-}
-
-.graph-input {
-  flex: 1;
-  padding: 12px 16px;
-  background: rgba(255,255,255,0.04);
-  border: 1px solid var(--glass-border);
-  border-radius: var(--radius-sm);
-  color: var(--text-primary);
-  font-family: var(--font-mono);
-  font-size: 17px;
-  font-weight: 500;
-  outline: none;
-  transition: var(--transition);
-}
-
-.graph-input:focus {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px var(--accent-glow);
-}
-
-.graph-submit {
-  padding: 12px 24px;
-  background: linear-gradient(135deg, var(--accent-dark), var(--accent));
-  border: none;
-  border-radius: var(--radius-sm);
-  color: #fff;
-  font-family: var(--font);
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  flex-shrink: 0;
-}
-
-.graph-submit:active { transform: translateY(0) scale(0.97); }
-
-.graph-presets {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.graph-preset {
-  padding: 5px 12px;
-  background: rgba(255,255,255,0.04);
-  border: 1px solid var(--glass-border);
-  border-radius: 16px;
-  color: var(--text-tertiary);
-  font-family: var(--font-mono);
-  font-size: 12px;
-  cursor: pointer;
-  transition: var(--transition);
-}
-
-.graph-preset:hover {
-  background: rgba(255,255,255,0.08);
-  color: var(--text-secondary);
-  border-color: var(--accent);
-  transform: translateY(-1px);
-}
-
-.graph-preset:active { transform: scale(0.95); }
-
-.graph-canvas-wrap {
-  position: relative;
-  padding: 0;
-  overflow: hidden;
-  aspect-ratio: 16 / 9;
-  min-height: 350px;
-  max-height: 550px;
-  border-radius: var(--radius-md);
-}
-
-#graphCanvas {
-  width: 100%;
-  height: 100%;
-  display: block;
-  cursor: grab;
-  touch-action: none;
-  transform: translateZ(0);
-}
-
-#graphCanvas:active { cursor: grabbing; }
-
-.graph-overlay-controls {
-  position: absolute;
-  top: 14px;
-  right: 14px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: rgba(0,0,0,0.55);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  padding: 5px 8px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--glass-border);
-}
-
-.graph-ctrl-btn {
-  background: transparent;
-  border: none;
-  color: var(--text-secondary);
-  width: 30px;
-  height: 30px;
-  border-radius: 6px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: var(--transition);
-}
-
-.graph-ctrl-btn:hover {
-  background: rgba(255,255,255,0.12);
-  color: var(--text-primary);
-}
-
-.graph-ctrl-btn:active { transform: scale(0.85); }
-
-.graph-zoom {
-  font-size: 11px;
-  color: var(--text-tertiary);
-  font-weight: 500;
-  min-width: 34px;
-  text-align: center;
-  font-variant-numeric: tabular-nums;
-}
+/* GRAPHS REMOVED in v4.0 */
 
 /* =============================================
    HISTORY
@@ -1777,9 +1591,7 @@ body {
   display: none;
   position: fixed;
   top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0,0,0,0.7);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: rgba(0,0,0,0.8);
   z-index: 2000;
   align-items: flex-start;
   justify-content: center;
@@ -1929,9 +1741,7 @@ body {
   display: none;
   position: fixed;
   top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0,0,0,0.75);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: rgba(0,0,0,0.82);
   z-index: 3000;
   align-items: center;
   justify-content: center;
@@ -2062,17 +1872,14 @@ body {
   right: 12px;
   bottom: max(12px, var(--sa-bottom, 12px));
   height: 64px;
-  background: rgba(10, 10, 10, 0.88);
-  backdrop-filter: blur(20px) saturate(1.4);
-  -webkit-backdrop-filter: blur(20px) saturate(1.4);
+  background: rgba(10, 10, 10, 0.92);
   border: 1px solid var(--glass-border);
   border-radius: var(--radius-xl);
-  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.6), 0 0 0 0.5px rgba(255, 255, 255, 0.05) inset;
+  box-shadow: 0 2px 20px rgba(0, 0, 0, 0.5);
   z-index: 200;
   padding: 0 8px;
   justify-content: space-around;
   align-items: center;
-  transition: opacity 0.3s ease, transform 0.3s ease;
 }
 
 .bnav-item {
@@ -2149,16 +1956,14 @@ body {
 
 .toast {
   padding: 12px 24px;
-  background: rgba(20,20,20,0.92);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  background: rgba(20,20,20,0.95);
   border: 1px solid var(--glass-border);
   border-radius: var(--radius-lg);
   color: var(--text-primary);
   font-family: var(--font);
   font-size: 14px;
   font-weight: 500;
-  box-shadow: 0 8px 40px rgba(0,0,0,0.6), 0 0 0 0.5px rgba(255,255,255,0.05) inset;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.5);
   animation: toastIn 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   pointer-events: all;
   text-align: center;
@@ -2251,12 +2056,7 @@ body {
 
 .dash-category-chip:active { transform: scale(0.95); }
 
-.dash-mini-canvas {
-  width: 100%;
-  height: 120px;
-  border-radius: var(--radius-xs);
-  display: block;
-}
+/* DASHBOARD MINI CANVAS REMOVED in v4.0 */
 
 /* =============================================
    SMART FORMULA CALCULATOR
@@ -2573,7 +2373,7 @@ body {
   justify-content: space-between;
   gap: 12px;
   padding: 16px 20px;
-  background: linear-gradient(135deg, rgba(66,165,245,0.06), rgba(66,165,245,0.02));
+  background: rgba(66,165,245,0.05);
   border: 1px solid rgba(66,165,245,0.12);
   border-radius: var(--radius-sm);
   transition: border-color 0.2s ease;
@@ -2640,56 +2440,7 @@ body {
   transform: scale(0.92);
 }
 
-/* =============================================
-   FORMULA MINI GRAPH PREVIEW
-   ============================================= */
-.formula-mini-graph {
-  padding: 16px 20px;
-  margin-bottom: 18px;
-  display: none;
-}
-
-.formula-mini-graph.visible {
-  display: block;
-  animation: fadeIn 0.2s ease;
-}
-
-.formula-mini-graph-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 10px;
-}
-
-.formula-mini-graph-title {
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--text-tertiary);
-  letter-spacing: 0.8px;
-}
-
-.formula-mini-graph-close {
-  background: transparent;
-  border: none;
-  color: var(--text-tertiary);
-  cursor: pointer;
-  padding: 4px;
-  border-radius: 4px;
-  transition: background 0.15s ease;
-}
-
-.formula-mini-graph-close:hover {
-  background: rgba(255,255,255,0.08);
-  color: var(--text-primary);
-}
-
-.formula-mini-canvas {
-  width: 100%;
-  height: 140px;
-  border-radius: var(--radius-xs);
-  display: block;
-}
-
+/* MINI GRAPH REMOVED in v4.0 */
 /* Preserve old class names for JS compatibility */
 .formula-calc-panel { }
 
@@ -2773,9 +2524,7 @@ body {
   font-weight: 600;
   cursor: pointer;
   transition: var(--transition-spring);
-  box-shadow: 0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.08);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.5);
   animation: installBtnIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
   user-select: none;
   -webkit-user-select: none;
@@ -2919,10 +2668,8 @@ body {
   gap: 8px;
   padding: 8px 16px;
   padding-top: max(8px, var(--sa-top, 0px));
-  background: rgba(239,83,80,0.18);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border-bottom: 1px solid rgba(239,83,80,0.2);
+  background: rgba(239,83,80,0.2);
+  border-bottom: 1px solid rgba(239,83,80,0.25);
   color: var(--danger);
   font-size: 12px;
   font-weight: 500;
@@ -3164,15 +2911,6 @@ body {
   .sci-result { font-size: 34px; }
   .sci-key { font-size: 15px; min-height: 44px; padding: 12px 4px; }
 
-  .graph-container {
-    padding: 0 16px 20px;
-  }
-
-  .graph-canvas-wrap {
-    min-height: 240px;
-    max-height: 350px;
-  }
-
   .history-container {
     padding: 0 16px 20px;
   }
@@ -3190,7 +2928,6 @@ body {
   .dash-container { padding: 0 16px 20px; }
   .dash-widgets { grid-template-columns: 1fr; gap: 14px; }
   .dash-widget { padding: 18px; }
-  .dash-mini-canvas { height: 100px; }
   .dash-category-chip { font-size: 11px; padding: 6px 14px; }
 
   .formula-smart-panel { padding: 18px 16px; }
@@ -3201,8 +2938,6 @@ body {
   .formula-smart-vars { gap: 6px; }
   .formula-smart-preview { font-size: 17px; padding: 8px 14px; }
   .formula-smart-result { padding: 14px 16px; }
-  .formula-mini-canvas { height: 110px; }
-
   .history-tabs { padding: 4px; gap: 3px; }
   .history-tab { font-size: 12px; padding: 8px 12px; }
 
@@ -3267,12 +3002,6 @@ body {
   .sci-body { padding: 20px; }
   .sci-key { padding: 16px 4px; min-height: 54px; font-size: 17px; }
 
-  .graph-container { padding: 0 36px 32px; }
-  .graph-input-panel { padding: 24px 28px; }
-  .graph-input { padding: 14px 18px; font-size: 18px; }
-  .graph-submit { padding: 14px 28px; font-size: 15px; }
-  .graph-canvas-wrap { min-height: 400px; max-height: 600px; }
-
   .history-container { padding: 0 36px 32px; }
   .history-item { padding: 16px 20px; }
 
@@ -3286,7 +3015,6 @@ body {
   .formula-smart-result-value { font-size: 36px; }
   .formula-smart-var-input { width: 84px; }
   .formula-smart-preview { font-size: 19px; }
-  .formula-mini-canvas { height: 140px; }
   .history-tabs { margin-bottom: 20px; }
   .history-tab { font-size: 14px; padding: 12px 18px; }
 
@@ -3356,12 +3084,6 @@ body {
   .sci-key.digit { font-size: 20px; }
   .sci-key.enter { font-size: 22px; }
 
-  .graph-prefix { font-size: 22px; }
-  .graph-input { font-size: 20px; padding: 16px 20px; }
-  .graph-submit { font-size: 16px; padding: 16px 32px; }
-  .graph-canvas-wrap { min-height: 450px; max-height: 650px; }
-  .graph-preset { padding: 6px 14px; font-size: 13px; }
-
   .history-item-result { font-size: 22px; }
   .history-item-formula { font-size: 14px; }
   .history-item-time { font-size: 12px; }
@@ -3414,9 +3136,6 @@ body {
   .sci-container { max-width: 520px; }
   .sci-result { font-size: 54px; }
 
-  .graph-container { max-width: 1100px; }
-  .graph-canvas-wrap { min-height: 500px; max-height: 700px; }
-
   .history-container { max-width: 800px; }
   .settings-container { max-width: 720px; }
 }
@@ -3455,7 +3174,6 @@ input[type="number"] { -webkit-appearance: none; appearance: none; }
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
-  .ambient-blob { display: none; }
 }
 
 /* --- PRINT STYLES FOR PDF --- */
@@ -3464,8 +3182,7 @@ input[type="number"] { -webkit-appearance: none; appearance: none; }
   .menu-btn, .header-icon-btn, .modal-overlay, #cmdPalette, #installModal,
   .formula-item-actions, .history-item-copy, .result-copy-btn,
   .formula-smart-btn, .formula-smart-clear,
-  .add-formula-btn, .sci-key, .dash-action, .graph-overlay-controls,
-  .graph-submit, .graph-presets {
+  .add-formula-btn, .sci-key, .dash-action {
     display: none !important;
   }
 
@@ -3485,7 +3202,7 @@ input[type="number"] { -webkit-appearance: none; appearance: none; }
   * { color: #000 !important; text-shadow: none !important; }
   a, button { color: #000 !important; }
   input, textarea, select { border-color: #ccc !important; background: #fff !important; color: #000 !important; }
-  .calc-input, .graph-input, .formula-smart-input { background: #fff !important; border: 1px solid #ccc !important; }
+  .calc-input, .formula-smart-input { background: #fff !important; border: 1px solid #ccc !important; }
   .preset-chip, .rounding-chip, .category-pill { border: 1px solid #ccc !important; background: #fff !important; }
   .preset-chip.active, .rounding-chip.active, .category-pill.active { background: #e0e0e0 !important; border-color: #999 !important; }
   .dash-widgets { grid-template-columns: 1fr 1fr; }
@@ -3493,8 +3210,6 @@ input[type="number"] { -webkit-appearance: none; appearance: none; }
   .history-item { border: 1px solid #eee !important; }
   .formula-item { border: 1px solid #eee !important; }
   .formula-grid { border: none !important; }
-  .graph-canvas-wrap { border: 1px solid #ddd !important; aspect-ratio: auto; min-height: 300px; }
-  #graphCanvas { filter: none; }
   .sci-display { border: 1px solid #ddd !important; }
   .sci-body { border: 1px solid #ddd !important; }
   .sci-key { border: 1px solid #ccc !important; background: #f5f5f5 !important; }

@@ -75,9 +75,6 @@
         <button class="nav-item" data-section="cientifica"><svg viewBox="0 0 24 24" class="nav-icon">
             <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z" fill="currentColor" />
           </svg><span>Científica</span></button>
-        <button class="nav-item" data-section="graficos"><svg viewBox="0 0 24 24" class="nav-icon">
-            <path d="M3 3v18h18v-2H5V3H3z" fill="currentColor" />
-          </svg><span>Gráficos</span></button>
         <button class="nav-item" data-section="historial"><svg viewBox="0 0 24 24" class="nav-icon">
             <path
               d="M13 3a9 9 0 00-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42A8.954 8.954 0 0013 21a9 9 0 000-18z"
@@ -99,7 +96,7 @@
           <span>Comandos</span>
           <kbd class="cmd-kbd">⌘K</kbd>
         </button>
-        <span class="sidebar-version">ARC 3.5</span>
+        <span class="sidebar-version">ARC 4.0</span>
       </div>
     </aside>
 
@@ -156,11 +153,6 @@
                       fill="currentColor" />
                   </svg></div><span>Nueva fórmula</span>
               </button>
-              <button class="dash-action" data-action="graficos" style="--accent-c:#ffa726">
-                <div class="dash-action-icon"><svg viewBox="0 0 24 24" width="22" height="22">
-                    <path d="M3 3v18h18v-2H5V3H3zm4 4v10h2V7H7zm4 3v7h2v-7h-2zm4-3v10h2V7h-2z" fill="currentColor" />
-                  </svg></div><span>Graficar función</span>
-              </button>
               <button class="dash-action" data-action="cientifica" style="--accent-c:#66bb6a">
                 <div class="dash-action-icon"><svg viewBox="0 0 24 24" width="22" height="22">
                     <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z" fill="currentColor" />
@@ -199,13 +191,6 @@
                 </div>
               </div>
             </div>
-            <div class="dash-widget glass" id="dashMiniGraph">
-              <div class="dash-section-header">
-                <h3 class="dash-section-title">Vista rápida</h3><button class="dash-see-all"
-                  data-section="graficos">Abrir</button>
-              </div>
-              <canvas id="dashMiniCanvas" class="dash-mini-canvas"></canvas>
-            </div>
             <div class="dash-widget glass" id="dashFavCategory">
               <div class="dash-section-header">
                 <h3 class="dash-section-title">Categorías</h3>
@@ -243,28 +228,28 @@
             <div class="calc-input-section">
               <div class="calc-field"><label class="input-label">Valor de entrada</label><input type="number"
                   id="calcInput" class="calc-input" placeholder="0" step="any" autofocus></div>
-              <div class="calc-params-row">
-                <div class="calc-field half"><label class="input-label">Multiplicador</label><input type="number"
-                    id="multiplierInput" class="calc-input" value="1" step="any"></div>
-                <div class="calc-field half"><label class="input-label">Divisor</label><input type="number"
-                    id="divisorInput" class="calc-input" value="1" step="any"></div>
-              </div>
+              <div class="calc-field"><label class="input-label">Escala (1:X)</label><input type="number"
+                    id="divisorInput" class="calc-input" value="100" step="any"></div>
             </div>
+            <div class="calc-field"><label class="input-label">Modo</label>
+              <select id="scaleModeSelect" class="setting-select" style="width:100%">
+                <option value="real-to-scale">Real → Escala</option>
+                <option value="scale-to-real">Escala → Real</option>
+                <option value="scale-to-scale">Escala → Escala</option>
+              </select>
+            </div>
+            <div class="calc-field" id="fromScaleField" style="display:none"><label class="input-label">Desde escala</label><input type="number" id="fromScaleInput" class="calc-input" value="100" step="any"></div>
             <div class="preset-section"><span class="input-label">Escalas rápidas</span>
               <div class="preset-chips">
+                <button class="preset-chip scale-preset" data-scale="10">1:10</button>
+                <button class="preset-chip scale-preset" data-scale="20">1:20</button>
+                <button class="preset-chip scale-preset" data-scale="25">1:25</button>
                 <button class="preset-chip scale-preset" data-scale="50">1:50</button>
+                <button class="preset-chip scale-preset" data-scale="75">1:75</button>
                 <button class="preset-chip scale-preset" data-scale="100">1:100</button>
+                <button class="preset-chip scale-preset" data-scale="125">1:125</button>
                 <button class="preset-chip scale-preset" data-scale="200">1:200</button>
-                <button class="preset-chip scale-preset" data-scale="500">1:500</button>
                 <button class="preset-chip custom" data-value="custom">Personalizado</button>
-              </div>
-            </div>
-            <div class="preset-section"><span class="input-label">Divisores rápidos</span>
-              <div class="preset-chips">
-                <button class="preset-chip" data-value="8.5">8.5</button>
-                <button class="preset-chip" data-value="9.8">9.8</button>
-                <button class="preset-chip" data-value="7.2">7.2</button>
-                <button class="preset-chip" data-value="12">12</button>
               </div>
             </div>
             <div class="rounding-section"><span class="input-label">Redondeo</span>
@@ -353,12 +338,6 @@
                 <div class="formula-smart-result-value" id="formulaCalcResult">—</div>
               </div>
               <div class="formula-smart-result-actions">
-                <button class="formula-smart-btn formula-smart-graph-btn" id="formulaGraphBtn" aria-label="Graficar">
-                  <svg viewBox="0 0 24 24" width="18" height="18">
-                    <path d="M3 3v18h18v-2H5V3H3z" fill="currentColor" />
-                    <path d="M7 16l4-8 4 4 4-6" fill="none" stroke="currentColor" stroke-width="2" />
-                  </svg>
-                </button>
                 <button class="formula-smart-btn formula-smart-copy-btn" id="formulaCalcCopy" aria-label="Copiar">
                   <svg viewBox="0 0 24 24" width="16" height="16">
                     <path
@@ -368,21 +347,6 @@
                 </button>
               </div>
             </div>
-          </div>
-
-          <!-- Mini Graph Preview (inline) -->
-          <div class="formula-mini-graph glass" id="formulaMiniGraph">
-            <div class="formula-mini-graph-header">
-              <span class="formula-mini-graph-title">Vista gráfica</span>
-              <button class="formula-mini-graph-close" id="formulaMiniGraphClose" aria-label="Cerrar">
-                <svg viewBox="0 0 24 24" width="16" height="16">
-                  <path
-                    d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"
-                    fill="currentColor" />
-                </svg>
-              </button>
-            </div>
-            <canvas id="formulaMiniCanvas" class="formula-mini-canvas"></canvas>
           </div>
 
           <!-- Formula Search Bar -->
@@ -475,49 +439,7 @@
         </div>
       </section>
 
-      <!-- ====== GRÁFICOS ====== -->
-      <section id="section-graficos" class="section">
-        <div class="section-header">
-          <div class="header-left"><button class="menu-btn" aria-label="Menú"><svg viewBox="0 0 24 24" width="22"
-                height="22">
-                <path d="M3 6h18v2H3V6zm0 5h18v2H3v-2zm0 5h18v2H3v-2z" fill="currentColor" />
-              </svg></button>
-            <h1 class="section-title">Gráficos</h1>
-          </div>
-          <div class="header-right"><button class="header-icon-btn" id="graphFullscreen" title="Pantalla completa"><svg
-                viewBox="0 0 24 24" width="20" height="20">
-                <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"
-                  fill="currentColor" />
-              </svg></button></div>
-        </div>
-        <div class="graph-container">
-          <div class="graph-input-panel glass">
-            <div class="graph-input-row"><span class="graph-prefix">y =</span><input type="text" id="graphInput"
-                class="graph-input" placeholder="ej: 2x + 3" value="2x + 3" spellcheck="false"
-                autocomplete="off"><button id="graphBtn" class="graph-submit">Graficar</button></div>
-            <div class="graph-presets">
-              <button class="graph-preset" data-eq="2x + 3">2x+3</button>
-              <button class="graph-preset" data-eq="x^2">x²</button>
-              <button class="graph-preset" data-eq="sin(x)">sin(x)</button>
-              <button class="graph-preset" data-eq="cos(x)">cos(x)</button>
-              <button class="graph-preset" data-eq="sqrt(x)">√x</button>
-              <button class="graph-preset" data-eq="x^3">x³</button>
-              <button class="graph-preset" data-eq="1/x">1/x</button>
-              <button class="graph-preset" data-eq="tan(x)">tan(x)</button>
-            </div>
-          </div>
-          <div class="graph-canvas-wrap glass" id="graphWrap">
-            <canvas id="graphCanvas"></canvas>
-            <div class="graph-overlay-controls">
-              <button id="graphReset" class="graph-ctrl-btn" title="Restablecer"><svg viewBox="0 0 24 24" width="16"
-                  height="16">
-                  <path d="M12 5V1L7 6l5 5V7a6 6 0 11-6 6H4a8 8 0 108-8z" fill="currentColor" />
-                </svg></button>
-              <span class="graph-zoom" id="graphZoomLabel">100%</span>
-            </div>
-          </div>
-        </div>
-      </section>
+
 
       <!-- ====== HISTORIAL ====== -->
       <section id="section-historial" class="section">
@@ -687,9 +609,6 @@
       <button class="bnav-item" data-section="formulas"><svg viewBox="0 0 24 24" class="bnav-icon">
           <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z" fill="currentColor" />
         </svg><span>Fórmulas</span></button>
-      <button class="bnav-item" data-section="graficos"><svg viewBox="0 0 24 24" class="bnav-icon">
-          <path d="M3 3v18h18v-2H5V3H3z" fill="currentColor" />
-        </svg><span>Gráficos</span></button>
     </nav>
 
     <!-- ===== INSTALL BUTTON ===== -->
@@ -781,10 +700,6 @@
                 height="18">
                 <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z" fill="currentColor" />
               </svg><span>Ir a Calculadora Científica</span></button>
-            <button class="cmd-item" data-action="nav" data-value="graficos"><svg viewBox="0 0 24 24" width="18"
-                height="18">
-                <path d="M3 3v18h18v-2H5V3H3z" fill="currentColor" />
-              </svg><span>Ir a Gráficos</span></button>
             <button class="cmd-item" data-action="nav" data-value="historial"><svg viewBox="0 0 24 24" width="18"
                 height="18">
                 <path

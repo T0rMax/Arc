@@ -1,7 +1,7 @@
 {
   "name": "ARC — Plataforma profesional de cálculos",
   "short_name": "ARC",
-  "description": "Plataforma profesional de cálculos para arquitectura e ingeniería. Calculadora de escalas, fórmulas dinámicas, calculadora científica y gráficos.",
+  "description": "Plataforma profesional de cálculos para arquitectura e ingeniería. Calculadora de escalas, fórmulas dinámicas y calculadora científica.",
   "start_url": "/index.html",
   "display": "standalone",
   "display_override": ["standalone", "minimal-ui"],
@@ -50,13 +50,6 @@
       "short_name": "Científica",
       "description": "Abrir calculadora científica",
       "url": "/index.html#section-cientifica",
-      "icons": [{ "src": "icons/icon-192.svg", "sizes": "192x192" }]
-    },
-    {
-      "name": "Gráficos",
-      "short_name": "Gráficos",
-      "description": "Abrir graficador de funciones",
-      "url": "/index.html#section-graficos",
       "icons": [{ "src": "icons/icon-192.svg", "sizes": "192x192" }]
     }
   ]
